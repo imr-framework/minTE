@@ -12,28 +12,28 @@ from pypulseq.opts import Opts
 import matplotlib.pyplot as plt
 from scipy.io import savemat, loadmat
 from pypulseq.points_to_waveform import points_to_waveform
-
+from sequence_helpers import *
 
 # System options (copied from : amri-sos service form)
-def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
+def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf=1.5e-3, minTE=False):
     # System info for June
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     seq = Sequence(system=system)
 
     # Derived parameters
-    flip = FA*np.pi/180
-    N_spoke = int(np.ceil(pi*N))# Minimum integer number of spokes needed at Nyquist limit
-    dtheta = 2*pi / N_spoke
-    thetas = np.arange(0, N_spoke*dtheta, dtheta)
-    ktraj = np.zeros([N_spoke, N],dtype=complex)
+    flip = FA * np.pi / 180
+    N_spoke = int(np.ceil(pi * N))  # Minimum integer number of spokes needed at Nyquist limit
+    dtheta = 2 * pi / N_spoke
+    thetas = np.arange(0, N_spoke * dtheta, dtheta)
+    ktraj = np.zeros([N_spoke, N], dtype=complex)
 
     # Slice selection RF pulse and gradient
     rf, gz, gzr = make_sinc_pulse(flip_angle=flip, system=system, duration=T_rf,
-                             slice_thickness=thk, apodization=0.5, time_bw_product = 4)
+                                  slice_thickness=thk, apodization=0.5, time_bw_product=4)
     # Readout gradient prototype
-    dk = 1/FOV
-    k_width = N*dk
+    dk = 1 / FOV
+    k_width = N * dk
     ro_time = 6.4e-3
     gx = make_trapezoid(channel='x', system=system, flat_area=k_width, flat_time=ro_time)
     adc = make_adc(num_samples=N, duration=gx.flat_time, delay=gx.rise_time)
@@ -41,17 +41,17 @@ def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
     # Slice refocusing and spoiler (after readout)
     pre_time = 8e-4
     reph_dur = 1e-3
-    gz_reph = make_trapezoid(channel='z',system=system, area=-gz.area/2, duration=reph_dur)
-    gz_spoil = make_trapezoid(channel='z', system=system, area=gz.area*2, duration=3*pre_time)
+    gz_reph = make_trapezoid(channel='z', system=system, area=-gz.area / 2, duration=reph_dur)
+    gz_spoil = make_trapezoid(channel='z', system=system, area=gz.area * 2, duration=3 * pre_time)
 
     # Timing
     if minTE:
         TE_fill = 0
-        minTE = gx.rise_time + calc_duration(gz_reph) + calc_duration(gz)/2
-        print(f"The minimum TE is {1000*minTE} ms.")
+        minTE = gx.rise_time + calc_duration(gz_reph) + calc_duration(gz) / 2
+        print(f"The minimum TE is {1000 * minTE} ms.")
         TE = minTE
     else:
-        TE_fill = TE - (calc_duration(gz_reph) + calc_duration(gz)/2 + gx.rise_time)
+        TE_fill = TE - (calc_duration(gz_reph) + calc_duration(gz) / 2 + gx.rise_time)
 
     TR_fill = TR - TE_fill - calc_duration(gz) - calc_duration(gz_reph) - calc_duration(gx) - calc_duration(gz_spoil)
 
@@ -59,9 +59,9 @@ def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
     delay2 = make_delay(TR_fill)
 
     # Add blocks to seq object
-    for ns in range(N_spoke): # for each spoke
-        seq.add_block(rf, gz) # Slice selection
-        seq.add_block(gz_reph) # Slice refocusing
+    for ns in range(N_spoke):  # for each spoke
+        seq.add_block(rf, gz)  # Slice selection
+        seq.add_block(gz_reph)  # Slice refocusing
 
         # Make oblique readout gradients and record kspace trajectory
         k_width_projx = k_width * np.cos(thetas[ns])
@@ -75,8 +75,91 @@ def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
         ktraj[ns, :] = get_ktraj(gx, gy, adc, display=False)
 
         seq.add_block(delay1)
-        seq.add_block(gx,gy,adc)
+        seq.add_block(gx, gy, adc)
         seq.add_block(gz_spoil)
+        seq.add_block(delay2)
+
+        # Save k-space trajectory
+
+    # Save sequence
+    return seq, ktraj, TE
+
+def write_UTE_2D_original_oblique(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False, enc='xyz'):
+    # System info for June
+    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
+                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    seq = Sequence(system=system)
+
+    # Encoding orientation
+    ug_ro1, ug_ro2, ug_ss = parse_enc(enc)
+
+    # Derived parameters
+    flip = FA*np.pi/180
+    N_spoke = int(np.ceil(pi*N))# Minimum integer number of spokes needed at Nyquist limit
+    dtheta = 2*pi / N_spoke
+    thetas = np.arange(0, N_spoke*dtheta, dtheta)
+    ktraj = np.zeros([N_spoke, N],dtype=complex)
+
+
+    # Slice selection RF pulse and gradient
+    rf, gz, gzr = make_sinc_pulse(flip_angle=flip, system=system, duration=T_rf,
+                             slice_thickness=thk, apodization=0.5, time_bw_product = 4)
+    g_ss_x, g_ss_y, g_ss_z = make_oblique_gradients(gz, ug_ss)
+
+    # Readout gradient prototype
+    dk = 1/FOV
+    k_width = N*dk
+    ro_time = 6.4e-3
+    g_ro = make_trapezoid(channel='x', system=system, flat_area=k_width, flat_time=ro_time)
+
+    adc = make_adc(num_samples=N, duration=g_ro.flat_time, delay=g_ro.rise_time)
+
+    # Slice refocusing and spoiler (after readout)
+    pre_time = 8e-4
+    reph_dur = 1e-3
+    gz_reph = make_trapezoid(channel='z',system=system, area=-gz.area/2, duration=reph_dur)
+    g_ss_reph_x, g_ss_reph_y, g_ss_reph_z = make_oblique_gradients(gz_reph, ug_ss)
+
+    gz_spoil = make_trapezoid(channel='z', system=system, area=gz.area*2, duration=3*pre_time)
+    g_ss_spoil_x, g_ss_spoil_y, g_ss_spoil_z = make_oblique_gradients(gz, ug_ss)
+
+
+    # Timing
+    if minTE:
+        TE_fill = 0
+        minTE = g_ro.rise_time + calc_duration(gz_reph) + calc_duration(gz)/2
+        print(f"The minimum TE is {1000*minTE} ms.")
+        TE = minTE
+    else:
+        TE_fill = TE - (calc_duration(gz_reph) + calc_duration(gz)/2 + g_ro.rise_time)
+
+    TR_fill = TR - TE_fill - calc_duration(gz) - calc_duration(gz_reph) - calc_duration(g_ro) - calc_duration(gz_spoil)
+
+    delay1 = make_delay(TE_fill)
+    delay2 = make_delay(TR_fill)
+
+    # Add blocks to seq object
+    for ns in range(N_spoke): # for each spoke
+
+        # Record k-space trajectory using orthogonal x/y gradients
+        k_width_projx = k_width * np.cos(thetas[ns])
+        k_width_projy = k_width * np.sin(thetas[ns])
+        gx = make_trapezoid(channel='x', system=system, flat_area=k_width_projx, flat_time=ro_time)
+        gy = make_trapezoid(channel='y', system=system, flat_area=k_width_projy, flat_time=ro_time)
+
+        # Make oblique readout gradients a
+        # Make oblique readout gradients (x and y)
+        g_ro_x, g_ro_y, g_ro_z = combine_oblique_radial_readout_2d(g_ro, ug_ro1, ug_ro2, thetas[ns])
+
+
+        ## TODO make ktraj function!
+        ktraj[ns, :] = get_ktraj(gx, gy, adc, display=False)
+
+        seq.add_block(rf, g_ss_x, g_ss_y, g_ss_z) # Slice selection
+        seq.add_block(g_ss_reph_x, g_ss_reph_y, g_ss_reph_z) # Slice refocusing
+        seq.add_block(delay1)
+        seq.add_block(g_ro_x,g_ro_y,g_ro_z, adc)
+        seq.add_block(g_ss_spoil_x, g_ss_spoil_y, g_ss_spoil_z)
         seq.add_block(delay2)
 
 
@@ -86,7 +169,6 @@ def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
     # Save sequence
     return seq, ktraj, TE
 
-# TODO
 def write_UTE_2D_splitgrad_minTE(N, FOV, thk, FA, TR, T_rf = 1.5e-3):
     # System info for June
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
@@ -173,7 +255,6 @@ def write_UTE_2D_splitgrad_minTE(N, FOV, thk, FA, TR, T_rf = 1.5e-3):
 
     return seq, ktraj, TE
 
-# TODO
 def write_UTE_2D_splitgrad_rewound(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE=False):
     # System info for June
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
@@ -185,10 +266,11 @@ def write_UTE_2D_splitgrad_rewound(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE
     N_spoke = int(np.ceil(pi*N))# Minimum integer number of spokes needed at Nyquist limit
     dtheta = 2*pi / N_spoke
     thetas = np.arange(0, N_spoke*dtheta, dtheta)
+    print(thetas)
     ktraj = np.zeros([N_spoke, N],dtype=complex)
 
     # Slice selection RF pulse and gradient
-    rf, gz, gzr = make_sinc_pulse(flip_angle=flip, system=system, duration=T_rf,
+    rf, gz, gzr = make_sinc_pulse(flip_angle=flip, system=system, duration=T_rf, return_gz=True,
                              slice_thickness=thk, apodization=0.5, time_bw_product = 4)
 
 
@@ -294,60 +376,152 @@ def write_UTE_2D_splitgrad_rewound(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE
         seq.add_block(delay2)
 
     # Save sequence
-    return seq, ktraj, TE
+    return seq, ktraj, TE, thetas
 
-def write_UTE_3D(N, FOV, FA, TE, TR):
+def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
+                            use_half_pulse=True, rf_dur=1e-3, save_seq=True):
+    """
+    Parameters
+    ----------
+    N : int
+        Matrix size
+    Nr : int
+        Number of radial spokes
+    FOV : float
+        Field-of-view in [meters]
+    thk : float
+        Slice thickness in [meters]
+    FA : float
+        Flip angle in [degrees]
+    TR : float
+        Repetition time in [seconds]
+    ro_asymmetry : float
+        The ratio A/B where a A/(A+B) portion of 2*Kmax is omitted and B/(A+B) is acquired.
 
-    return seq, ktraj
+    """
+    # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
+    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
+                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    seq = Sequence(system=system)
 
+    # Derived parameters
+    dphi = 2 * np.pi / Nr #
+    ro_duration = 2.5e-3
+    ro_os = 2 # Oversampling factor
+    #minRF_to_ADC_time = 50e-6 # this was not used.
 
-# TODO: Helpers
-def get_ktraj(gx, gy, adc, display=False):
-    sampled_times = np.linspace(0, gx.flat_time, adc.num_samples)
-    kx_pre = 0.5 * gx.amplitude * gx.rise_time
-    ky_pre = 0.5 * gy.amplitude * gy.rise_time
+    rf_spoiling_inc = 117 # RF spoiling increment value.
 
-    kx = kx_pre + gx.amplitude * sampled_times
-    ky = ky_pre + gy.amplitude * sampled_times
-
-    if display:
-        plt.figure(1001)
-        plt.plot(kx, ky, 'ro-')
-        plt.xlabel('kx')
-        plt.ylabel('ky')
-        plt.show()
-
-    return (kx + 1j * ky)
-
-def get_ktraj_with_rew(gx, gx_rew, gy, gy_rew, adc, display=False):
-    sampled_times = np.linspace(0, gx.flat_time, adc.num_samples)
-    kx_pre = 0.5 * gx.amplitude * gx.rise_time + gx_rew.area
-    ky_pre = 0.5 * gy.amplitude * gy.rise_time + gy_rew.area
-
-    kx = kx_pre + gx.amplitude * sampled_times
-    ky = ky_pre + gy.amplitude * sampled_times
-
-    if display:
-        plt.figure(1001)
-        plt.plot(kx, ky, 'ro-')
-        plt.xlabel('kx')
-        plt.ylabel('ky')
-        plt.show()
-
-    return (kx + 1j * ky)
-
-def make_scaled_extended_trapezoid(channel, system, times, amplitudes, scale):
-    # Remove non-distinct timing
-    inds_of_no_change = np.array(np.where(np.diff(times) == 0)) + 1
-    for ind in inds_of_no_change:
-        times = np.delete(times, ind)
-        amplitudes = np.delete(amplitudes, ind)
-    if scale == 0:
-        return make_trapezoid(channel=channel, system=system, duration=times[-1]-times[0], amplitude = 0)
+    # Sequence components
+    if use_half_pulse:
+        cp = 1
     else:
-        return make_extended_trapezoid(channel=channel, system=system, times=times, amplitudes = scale*amplitudes)
+        cp = 0.5
+
+    rf, gz, gz_reph = make_sinc_pulse(flip_angle=FA*np.pi/180, duration=rf_dur, slice_thickness=thk, apodization=0.5,
+                                      time_bw_product=4, center_pos=cp, system=system, return_gz=True)
+
+    # Asymmetry! (0 - fully rewound; 1 - hall-echo)
+    Nro = np.round(ro_os*N) # Number of readout points
+    s = np.round(ro_asymmetry * Nro / 2 ) / (Nro / 2)
+    dk = (1/FOV) / (1+s)
+    ro_area = N * dk
+    gro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
+    adc = make_adc(num_samples=Nro, duration=gro.flat_time, delay=gro.rise_time, system=system)
+    gro_pre = make_trapezoid(channel='x', area= - (gro.area - ro_area)/2 - (ro_area/2) * (1-s), system=system)
+
+    # Spoilers
+    gro_spoil = make_trapezoid(channel='x',area=0.2*N*dk, system=system)
+
+    # Calculate timing
+
+    if use_half_pulse:
+        TE = gz.fall_time + calc_duration(gro_pre) + gro.rise_time + adc.dwell * Nro / 2 * (1-s)
+        delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
+    else:
+        TE = gz.fall_time + calc_duration(gro_pre, gz_reph) + gro.rise_time + adc.dwell * Nro / 2 * (1 - s)
+        delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_reph) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
+        if calc_duration(gz_reph) > calc_duration(gro_pre):
+            gro_pre.delay = calc_duration(gz_reph) - calc_duration(gro_pre)
+
+    assert np.all(delay_TR >= calc_duration(gro_spoil)) # The TR delay starts at the same time as the spoilers!
+
+    print(f'TE = {TE*1e6:.0f} us')
+
+    # Starting RF phase and increments
+    rf_phase = 0
+    rf_inc = 0
+
+    ktraj = np.zeros((2*Nr, int(adc.num_samples)),dtype=complex)
+    u = 0
+
+    C = int(use_half_pulse) + 1
+
+    for spoke_ind in range(Nr): # for each spoke
+        for c in range(C): # why?
+            rf.phase_offset = (rf_phase / 180) * np.pi
+            adc.phase_offset = (rf_phase / 180) * np.pi
+            # (no need to change RF frequency?)
+            rf_inc = np.mod(rf_inc + rf_spoiling_inc, 360.0)
+            rf_phase = np.mod(rf_phase + rf_inc, 360.0)
+
+            # Reverse slice select amplitude (always z = 0)
+            if use_half_pulse:
+                modify_gradient(gz, scale=-1)
+
+            seq.add_block(rf, gz)
+            phi = dphi * spoke_ind
+
+            ug2d = [np.cos(phi),np.sin(phi),0]
+
+            gpx, gpy, __ = make_oblique_gradients(gro_pre, ug2d)
+            grx, gry, __ = make_oblique_gradients(gro, ug2d)
+            gsx, gsy, __ = make_oblique_gradients(gro_spoil, ug2d)
+
+            if use_half_pulse:
+                seq.add_block(gpx, gpy)
+            else:
+                seq.add_block(gpx, gpy, gz_reph)
+
+            seq.add_block(grx, gry, adc)
+            seq.add_block(gsx, gsy, make_delay(delay_TR))
+
+            #ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
+            ktraj[u, :] = get_ktraj_with_rew(grx, gpx, gry, gpy, adc, display=False)
+            u += 1
+
+    ok, error_report = seq.check_timing()  # Check whether the timing of the sequence is correct
+    if ok:
+        print('Timing check passed successfully')
+    else:
+        print('Timing check failed. Error listing follows:')
+        [print(e) for e in error_report]
+
+    return seq, TE, ktraj
 
 
+def combine_oblique_radial_readout_2d(g, ug1, ug2, theta):
+    """
+    Inputs
+    ------
+    g : Pypulseq Gradient object
+        Base gradient to be made into oblique gradients
+    ug1 : array_like
+        Length 3, unit gradient in first direction
+    ug2 :
+        Length 3, unit gradient in second direction
+    theta : float
+        Angle in radians of specific radial readout spoke
+    Returns
+    -------
+    gx, gy, gz : Pypulseq Gradient objects in each direction
+    """
+    # Check that ug1 and ug2 are orthogonal
+    if np.dot(ug1,ug2) != 0:
+        raise ValueError("The two directions provided must be orthogonal.")
+    ug_net = np.array(ug1) * np.cos(theta) + np.array(ug2) * np.sin(theta)
+    gx, gy, gz = make_oblique_gradients(g, ug_net)
+    return gx, gy, gz
 
 if __name__ == '__main__':
     # Original (TE = 5 ms)
@@ -358,9 +532,11 @@ if __name__ == '__main__':
     #seq.write(f'./seqs/{name}.seq')
   #  savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':k_traj, 'TE':TE})
 
-
+    #seq, k_traj, TE = write_UTE_2D_original_oblique(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=5e-3, TR=20e-3,
+                                  #          T_rf = 1.5e-3, minTE=True, enc=[(1,2,0),(-2,1,0),(0,0,1)])
+    #seq.write('testrun.seq')
     # Split grad version with minTE
-    seq, k_traj, TE = write_UTE_2D_splitgrad_minTE(N=256, FOV=250e-3, thk=5e-3, FA=15, TR=20e-3, T_rf = 1.5e-3)
+    #seq, k_traj, TE = write_UTE_2D_splitgrad_minTE(N=256, FOV=250e-3, thk=5e-3, FA=15, TR=20e-3, T_rf = 1.5e-3)
     # print(seq.test_report())
     # seq.plot(time_range=[0, 40e-3])
     # name = 'ute_minTE_2D_split_grad_N256-FOV250-thk5-FA15-TR20_022221'
@@ -368,8 +544,9 @@ if __name__ == '__main__':
     # savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':k_traj, 'TE':TE})
 
     # Split grad version with rewinder
-    #seq, ktraj, TE = write_UTE_2D_splitgrad_rewound(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=10e-3, TR=100e-3, T_rf=1.5e-3, minTE=False)
-   # name = 'ute_rewound_TE10_longTR100_022321'
+    # seq, ktraj, TE, thetas = write_UTE_2D_splitgrad_rewound(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=10e-3, TR=100e-3, T_rf=1.5e-3, minTE=False)
+    # name = 'ute_rewound_TE10_longTR100_022321'
+    # savemat('ute_rewound_splitgrad_thetas_N256.mat',{'thetas':thetas})
 
     #seq, ktraj, TE = write_UTE_2D_splitgrad_rewound(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=0, TR=20e-3, T_rf=1.5e-3, minTE=True)
     #name = 'ute_rewound_minTE_022321'
@@ -378,3 +555,32 @@ if __name__ == '__main__':
   #  savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':ktraj, 'TE':TE})
  #   seq.plot(time_range=[0,100e-3])
     #print(seq.test_report())
+
+    # Need to get ktraj!!!
+    # Pypulseq demo version with default settings
+
+
+    # Pypulseq demo version with matched new settings
+    # seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97, save_seq=True)
+    # seq.write('ute_2d_demo.seq')
+    # savemat('ute_2d_demo_info.mat',{'TE':TE, 'ktraj': ktraj})
+
+
+    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=10e-3, FA=10, TR=10e-3,
+                                             ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3)
+    #print(seq.test_report())
+    seq.write('ute_2d_set1_halfpulse_tbw4_thk10_080221.seq')
+    savemat('ute_2d_set1_info_halfpulse_tbw4_thk10_080221.mat',{'TE':TE, 'ktraj': ktraj})
+
+
+    #seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
+   #                                          ro_asymmetry=0.97, use_half_pulse=False, rf_dur=2e-3)
+
+    #
+    # seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
+    #                                          ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3)
+    # print(seq.test_report())
+    # seq.write('ute_2d_set1_fullpulse_halfdur_080221.seq')
+    # savemat('ute_2d_set1_info_fullpulse_halfdur_080221.mat',{'TE':TE, 'ktraj': ktraj})
+
+    seq.plot(time_range=[0,30e-3])
