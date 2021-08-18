@@ -379,7 +379,7 @@ def write_UTE_2D_splitgrad_rewound(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE
     return seq, ktraj, TE, thetas
 
 def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
-                            use_half_pulse=True, rf_dur=1e-3, save_seq=True):
+                            use_half_pulse=True, rf_dur=1e-3, save_seq=True, TE_use=None):
     """
     Parameters
     ----------
@@ -446,7 +446,14 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
 
     assert np.all(delay_TR >= calc_duration(gro_spoil)) # The TR delay starts at the same time as the spoilers!
 
-    print(f'TE = {TE*1e6:.0f} us')
+    if TE_use is None:
+        print(f'TE = {TE*1e6:.0f} us')
+    elif TE_use <= TE:
+        print(f'Desired TE is lower than minimal TE. Using minimal TE ={TE*1e6:.0f} us')
+    else:
+        TE_delay = np.ceil((TE_use - TE)/seq.grad_raster_time) * seq.grad_raster_time
+        print(f'Minimal TE: {TE*1e6:.0f} us; using TE: {(TE+TE_delay)*1e6:.0f} us')
+        TE += TE_delay
 
     # Starting RF phase and increments
     rf_phase = 0
@@ -478,6 +485,9 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
             grx, gry, __ = make_oblique_gradients(gro, ug2d)
             gsx, gsy, __ = make_oblique_gradients(gro_spoil, ug2d)
 
+            if TE_use is not None:
+                seq.add_block(make_delay(TE_delay))
+
             if use_half_pulse:
                 seq.add_block(gpx, gpy)
             else:
@@ -496,6 +506,7 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
     else:
         print('Timing check failed. Error listing follows:')
         [print(e) for e in error_report]
+
 
     return seq, TE, ktraj
 
@@ -566,11 +577,12 @@ if __name__ == '__main__':
     # savemat('ute_2d_demo_info.mat',{'TE':TE, 'ktraj': ktraj})
 
 
-    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=10e-3, FA=10, TR=10e-3,
-                                             ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3)
+    s = 0.2
+    #seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
+    #                                         ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3)
     #print(seq.test_report())
-    seq.write('ute_2d_set1_halfpulse_tbw4_thk10_080221.seq')
-    savemat('ute_2d_set1_info_halfpulse_tbw4_thk10_080221.mat',{'TE':TE, 'ktraj': ktraj})
+    #seq.write(f'ute_2d_set1_halfpulse_tbw4_s{s}_081221.seq')
+    #savemat(f'ute_2d_set1_info_halfpulse_s{s}_081221.mat',{'TE':TE, 'ktraj': ktraj})
 
 
     #seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
@@ -583,4 +595,13 @@ if __name__ == '__main__':
     # seq.write('ute_2d_set1_fullpulse_halfdur_080221.seq')
     # savemat('ute_2d_set1_info_fullpulse_halfdur_080221.mat',{'TE':TE, 'ktraj': ktraj})
 
-    seq.plot(time_range=[0,30e-3])
+
+
+    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
+                                             ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3,
+                                             TE_use=0.519e-3)
+    #print(seq.test_report())
+    seq.write(f'ute_2d_set1_halfpulse_s{s}_081721.seq')
+    savemat(f'ute_2d_set1_info_halfpulse_s{s}_081721.mat',{'TE':TE, 'ktraj': ktraj})
+
+    #seq.plot(time_range=[0,30e-3])
