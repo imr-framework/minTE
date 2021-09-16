@@ -13,14 +13,13 @@ from sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat, loadmat
 
-def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',saveseq=False):
+def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D', extra_delay=0,
+                       rf_type='gauss', os_factor=1, saveseq=False):
     # System options (copied from : amri-sos service form)
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     # Parameters
-    TR = 100e-3
-    FOV = 220e-3
-    # Radial scheme set-up
+    # Radial sampling set-up
     dx = FOV / N
     if enc_type == '3D':
         Ns, Ntheta, Nphi = get_radk_params_3D(dx, FOV)
@@ -33,45 +32,67 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',saves
         thetas = np.array([np.pi/2]) # Zero z-gradient.
 
     phis = np.linspace(0, 2 * np.pi, Nphi, endpoint=False)
-
-
-
-    print(f'Using {Ntheta} thetas and {Nphi} phis - {Ns} spokes in total.')
+    print(f'{enc_type} acq.: using {Ntheta} thetas and {Nphi} phis - {Ns} spokes in total.')
 
 
     # Make sequence components
     # Slice-selective RF pulse: 100 us, 15 deg gauss pulse
-    flip = 15
     FA = flip * pi / 180
     rf_dur = 100e-6
-    thk_slab = 220e-3
-    rf, g_pre, __ = make_gauss_pulse(flip_angle=FA, system=system,
-                                     duration=rf_dur, slice_thickness=thk_slab, return_gz=True)
+    thk_slab = FOV
+
+    if rf_type == 'gauss':
+        rf, g_pre, __ = make_gauss_pulse(flip_angle=FA, duration=rf_dur, slice_thickness=thk_slab,
+                                         system=system, return_gz=True)
+    elif rf_type == 'sinc':
+        rf, g_pre, __ = make_sinc_pulse(flip_angle=FA, duration=rf_dur, slice_thickness=thk_slab,
+                                          apodization=0.5,
+                                          time_bw_product=4, system=system, return_gz=True)
+    else:
+        raise ValueError("RF type can only be sinc or gauss")
+
+    # Round off timing to system requirements
     rf.delay = system.grad_raster_time * round(rf.delay / system.grad_raster_time)
     g_pre.delay = system.grad_raster_time * round (g_pre.delay / system.grad_raster_time)
-    #g_pre_aligned = make_trapezoid(channel=g_pre.channel, rise_time=4e-5, flat_area=g_pre.flat_area, flat_time=g_pre.flat_time)
+
+
     # Readout gradient (5 ms readout time)
     #ro_time = 5e-3
-    ro_rise_time = 20e-6
-    dk = 1/FOV
+    #ro_rise_time = 20e-6
+
+    dr = FOV/N
+    kmax = (1/dr)/2
+    Nro = np.round(os_factor * N)
+
+    # Asymmetry! (0 - fully rewound; 1 - half-echo)
+    ro_asymmetry = (kmax - g_pre.area/2)/(kmax + g_pre.area/2)
+    s = np.round(ro_asymmetry * Nro/2) / (Nro/2)
+    ro_duration = 2.5e-3
+    dkp = (1/FOV) / (1+s)
+    ro_area = N * dkp
+    g_ro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
+    adc = make_adc(num_samples=Nro, duration=g_ro.flat_time, delay=g_ro.rise_time, system=system)
 
     # Readout gradient & ADC
-    adc_dwell = 10e-6 # 10 us sampling interval (100 KHz readout bandwidth)
-
-    g_ro = make_trapezoid(channel='x', system=system, amplitude=dk/adc_dwell, flat_time=adc_dwell*int(N/2), rise_time=ro_rise_time)
-
-
-    flat_delay = (0.5*g_pre.area - 0.5*ro_rise_time*g_ro.amplitude) / g_ro.amplitude
-    flat_delay = system.grad_raster_time * round(flat_delay / system.grad_raster_time)
-    # First ADC at center of k-space.
-    adc = make_adc(system=system, num_samples=int(N/2), dwell = adc_dwell, delay = g_ro.rise_time+flat_delay)
+    #adc_dwell = 10e-6 # 10 us sampling interval (100 KHz readout bandwidth)
+    #g_ro = make_trapezoid(channel='x', system=system, amplitude=dk/adc_dwell, flat_time=adc_dwell*int(N/2), rise_time=ro_rise_time)
+    #flat_delay = (0.5*g_pre.area - 0.5*ro_rise_time*g_ro.amplitude) / g_ro.amplitude
+    #flat_delay = system.grad_raster_time * round(flat_delay / system.grad_raster_time)
+    # Make sure the first ADC is at center of k-space.
+    #adc = make_adc(system=system, num_samples=Nro, dwell = adc_dwell, delay = g_ro.rise_time+flat_delay)
 
     # Delay
     TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro)
     delayTR = make_delay(TRfill)
 
     # What is TE?
-    TE = 0.5 * calc_duration(g_pre) + adc.delay
+    if extra_delay is None:
+        extra_delay_time = 0
+    else:
+        extra_delay_time = extra_delay
+
+    TE = 0.5 * calc_duration(g_pre) + adc.delay + extra_delay_time
+    print(f'TE obtained: {TE*1e3} ms')
 
     # Initiate storage of trajectory
     ktraj = np.zeros([Ns, int(adc.num_samples), 3])
@@ -89,10 +110,13 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',saves
             g_ro_x, g_ro_y, g_ro_z = make_oblique_gradients(gradient=g_ro, unit_grad=ug)
             # Add components
             seq.add_block(rf, g_pre_x, g_pre_y, g_pre_z)
+            seq.add_block(make_delay(extra_delay_time))
             seq.add_block(g_ro_x, g_ro_y, g_ro_z, adc)
             seq.add_block(delayTR)
+
             # Store trajectory
-            ktraj[u, :, :] = get_ktraj_3d_rew_delay(g_ro_x, g_pre_x, g_ro_y, g_pre_y, g_ro_z, g_pre_z, adc)
+            gpxh, gpyh, gpzh = make_oblique_gradients(gradient=g_pre,unit_grad=-0.5*ug)
+            ktraj[u, :, :] = get_ktraj_3d_rew_delay(g_ro_x, gpxh, g_ro_y, gpyh, g_ro_z, gpzh, adc)
             u += 1
 
     # Display sequence plot
@@ -102,11 +126,17 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',saves
     print(out_text)
     # Save sequence
     if saveseq:
-        seq.write(f'seqs/code_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}.seq')
-        savemat(f'seqs/ktraj_code_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}.mat',{'ktraj': ktraj})
+        seq.write(f'seqs/code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}_delay{extra_delay_time*1e3}ms.seq')
+        savemat(f'seqs/ktraj_code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}.mat',{'ktraj': ktraj})
 
-    return seq
+    return seq, ktraj, TE
 
 if __name__ == '__main__':
-    seq = make_code_sequence(FOV=250e-3, N=128, TR=100e-3, flip=15, enc_type='2D',saveseq=True)
-    print(seq.test_report())
+    # 083021
+    seq, ktraj, TE = make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',extra_delay=None,
+                             os_factor=1, saveseq=False,rf_type='gauss')
+    seq.write('code3d_64_gauss_090221_os2.seq')
+    savemat('info_code3d_64_gauss_090221_os2.mat',{'ktraj':ktraj,'TE':TE})
+    #seq.plot(time_range=[0,2e-3])
+
+

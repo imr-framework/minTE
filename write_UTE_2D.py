@@ -379,7 +379,7 @@ def write_UTE_2D_splitgrad_rewound(N, FOV, thk, FA, TE, TR, T_rf = 1.5e-3, minTE
     return seq, ktraj, TE, thetas
 
 def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
-                            use_half_pulse=True, rf_dur=1e-3, save_seq=True, TE_use=None):
+                            use_half_pulse=True, rf_dur=1e-3, TE_use=None, rewinder_size=None):
     """
     Parameters
     ----------
@@ -397,6 +397,9 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
         Repetition time in [seconds]
     ro_asymmetry : float
         The ratio A/B where a A/(A+B) portion of 2*Kmax is omitted and B/(A+B) is acquired.
+    rf_dur : float
+        RF pulse duration in [seconds]
+
 
     """
     # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
@@ -420,6 +423,17 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
 
     rf, gz, gz_reph = make_sinc_pulse(flip_angle=FA*np.pi/180, duration=rf_dur, slice_thickness=thk, apodization=0.5,
                                       time_bw_product=4, center_pos=cp, system=system, return_gz=True)
+    gz_ramp_reph = make_trapezoid(channel='z',area=-gz.fall_time*gz.amplitude/2,system=system)
+
+
+    ##############################
+    if rewinder_size is not None:
+        if rewinder_size < 0:
+            raise ValueError("Rewinder size must be zero or positive")
+        else:
+            modify_gradient(gz_reph,scale=rewinder_size)
+    ###################################
+
 
     # Asymmetry! (0 - fully rewound; 1 - hall-echo)
     Nro = np.round(ro_os*N) # Number of readout points
@@ -434,10 +448,11 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
     gro_spoil = make_trapezoid(channel='x',area=0.2*N*dk, system=system)
 
     # Calculate timing
-
-    if use_half_pulse:
-        TE = gz.fall_time + calc_duration(gro_pre) + gro.rise_time + adc.dwell * Nro / 2 * (1-s)
-        delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
+    if use_half_pulse and rewinder_size is None:
+        TE = gz.fall_time + calc_duration(gro_pre, gz_ramp_reph) + gro.rise_time + adc.dwell * Nro / 2 * (1-s)
+        delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_ramp_reph) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
+        if calc_duration(gz_ramp_reph) > calc_duration(gro_pre):
+            gro_pre.delay = calc_duration(gz_ramp_reph) - calc_duration(gro_pre)
     else:
         TE = gz.fall_time + calc_duration(gro_pre, gz_reph) + gro.rise_time + adc.dwell * Nro / 2 * (1 - s)
         delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_reph) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
@@ -475,6 +490,8 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
             # Reverse slice select amplitude (always z = 0)
             if use_half_pulse:
                 modify_gradient(gz, scale=-1)
+                modify_gradient(gz_reph, scale=-1)
+                modify_gradient(gz_ramp_reph, scale=-1)
 
             seq.add_block(rf, gz)
             phi = dphi * spoke_ind
@@ -488,8 +505,8 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3
             if TE_use is not None:
                 seq.add_block(make_delay(TE_delay))
 
-            if use_half_pulse:
-                seq.add_block(gpx, gpy)
+            if use_half_pulse and rewinder_size is None:
+                seq.add_block(gpx, gpy, gz_ramp_reph)
             else:
                 seq.add_block(gpx, gpy, gz_reph)
 
@@ -535,73 +552,14 @@ def combine_oblique_radial_readout_2d(g, ug1, ug2, theta):
     return gx, gy, gz
 
 if __name__ == '__main__':
-    # Original (TE = 5 ms)
- #   seq, k_traj, TE = write_UTE_2D_original(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=5e-3, TR=20e-3, T_rf = 1.5e-3, minTE=True)
-  #  print(seq.test_report())
-    #seq.plot(time_range=[0, 40e-3])
-  #  name = 'ute_minTE_2D_original_N256-FOV250-thk5-FA15-TR20_022221'
-    #seq.write(f'./seqs/{name}.seq')
-  #  savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':k_traj, 'TE':TE})
+    # Try it!
 
-    #seq, k_traj, TE = write_UTE_2D_original_oblique(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=5e-3, TR=20e-3,
-                                  #          T_rf = 1.5e-3, minTE=True, enc=[(1,2,0),(-2,1,0),(0,0,1)])
-    #seq.write('testrun.seq')
-    # Split grad version with minTE
-    #seq, k_traj, TE = write_UTE_2D_splitgrad_minTE(N=256, FOV=250e-3, thk=5e-3, FA=15, TR=20e-3, T_rf = 1.5e-3)
-    # print(seq.test_report())
-    # seq.plot(time_range=[0, 40e-3])
-    # name = 'ute_minTE_2D_split_grad_N256-FOV250-thk5-FA15-TR20_022221'
-    # seq.write(f'./seqs/{name}.seq')
-    # savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':k_traj, 'TE':TE})
+     seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
+                                              ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3,
+                                              TE_use=None)
+     #print(seq.test_report())
 
-    # Split grad version with rewinder
-    # seq, ktraj, TE, thetas = write_UTE_2D_splitgrad_rewound(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=10e-3, TR=100e-3, T_rf=1.5e-3, minTE=False)
-    # name = 'ute_rewound_TE10_longTR100_022321'
-    # savemat('ute_rewound_splitgrad_thetas_N256.mat',{'thetas':thetas})
+     #seq.write('ute_2d_halfpulse_gz_ramp_reph_082721.seq')
+     #savemat('ktraj_ute_2d_halfpulse_gz_ramp_reph_082721.mat',{'ktraj':ktraj})
 
-    #seq, ktraj, TE = write_UTE_2D_splitgrad_rewound(N=256, FOV=250e-3, thk=5e-3, FA=15, TE=0, TR=20e-3, T_rf=1.5e-3, minTE=True)
-    #name = 'ute_rewound_minTE_022321'
-
-  #  seq.write(f'./seqs/{name}.seq')
-  #  savemat(f'./seqs/ktraj_{name}.mat',{'ktraj':ktraj, 'TE':TE})
- #   seq.plot(time_range=[0,100e-3])
-    #print(seq.test_report())
-
-    # Need to get ktraj!!!
-    # Pypulseq demo version with default settings
-
-
-    # Pypulseq demo version with matched new settings
-    # seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97, save_seq=True)
-    # seq.write('ute_2d_demo.seq')
-    # savemat('ute_2d_demo_info.mat',{'TE':TE, 'ktraj': ktraj})
-
-
-    s = 0.2
-    #seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
-    #                                         ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3)
-    #print(seq.test_report())
-    #seq.write(f'ute_2d_set1_halfpulse_tbw4_s{s}_081221.seq')
-    #savemat(f'ute_2d_set1_info_halfpulse_s{s}_081221.mat',{'TE':TE, 'ktraj': ktraj})
-
-
-    #seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
-   #                                          ro_asymmetry=0.97, use_half_pulse=False, rf_dur=2e-3)
-
-    #
-    # seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
-    #                                          ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3)
-    # print(seq.test_report())
-    # seq.write('ute_2d_set1_fullpulse_halfdur_080221.seq')
-    # savemat('ute_2d_set1_info_fullpulse_halfdur_080221.mat',{'TE':TE, 'ktraj': ktraj})
-
-
-
-    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=250e-3, thk=5e-3, FA=10, TR=10e-3,
-                                             ro_asymmetry=0.97, use_half_pulse=True, rf_dur=1e-3,
-                                             TE_use=0.519e-3)
-    #print(seq.test_report())
-    seq.write(f'ute_2d_set1_halfpulse_s{s}_081721.seq')
-    savemat(f'ute_2d_set1_info_halfpulse_s{s}_081721.mat',{'TE':TE, 'ktraj': ktraj})
-
-    #seq.plot(time_range=[0,30e-3])
+     #seq.plot(time_range=[0,30e-3])
