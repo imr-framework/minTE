@@ -291,6 +291,6 @@ if __name__ == '__main__':
 
     #print(seq.test_report())
     seq.write('ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.seq')
-    savemat('ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.mat',{'TE':TE, 'ktraj':ktraj})
+    savemat('seqs/ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.mat', {'TE':TE, 'ktraj':ktraj})
     #seq.plot(time_range=[0,60e-3])
 

@@ -17,7 +17,7 @@ from pypulseq.make_block_pulse import make_block_pulse
 from scipy.io import savemat, loadmat
 from scipy import integrate
 import matplotlib.pyplot as plt
-
+from datetime import date
 def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     # Let's do SWIFT
     # System
@@ -76,7 +76,7 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
 
     # Find RF modulations
     AM, FM = make_HS_pulse(beta=beta, b1=RF_amp_max, bw=BW)
-    list_RFs, total_flip = extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg)
+    list_RFs = extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg)
     # Save information
     rf_complex = np.zeros((1,len(list_RFs)),dtype=complex)
     for u in range(len(list_RFs)):
@@ -124,11 +124,13 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
 
     #ok, error_report = seq.check_timing()
 
+    today = date.today()
+    todayf = today.strftime("%m%d%y")
 
-    savemat(f'swift_info_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
+    savemat(f'swift_info_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
 
     if output:
-        seq.write(f'ADC2_swift_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}.seq')
+        seq.write(f'ADC2_swift_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}.seq')
     return seq
 
 # RF pulse creation
@@ -144,7 +146,6 @@ def extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg):
     list_RFs = []
     t = np.linspace(0, Tp, N_seg + 1, endpoint=True)
     tau = 2*t/Tp - 1
-    dw = Tp / N_seg
     phi_c = 0
 
     total_flip = 0
@@ -154,8 +155,8 @@ def extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg):
         list_RFs.append(make_block_pulse(flip_angle = 2*pi*AM(tau[n])*T_seg, duration=T_seg,
                                          phase_offset = phi_c))
         total_flip += 2*pi*AM(tau[n])*T_seg
-        dphi, _ = integrate.quad(FM, a = tau[n],b = tau[n+1])
-        phi_c = phi_c + dphi
+        dphi_bar, _ = integrate.quad(FM, a = tau[n],b = tau[n+1])
+        phi_c = phi_c + dphi_bar*2*pi
     print(f'Total flip angle from AM: {total_flip}')
     return list_RFs
 
@@ -182,6 +183,6 @@ if __name__ == '__main__':
     #seq.plot()
     #seq = write_swift(N=16, fa_deg=5, output=True)
 
-    seq = write_swift(N=32, fa_deg=5, L_over=1, enc_type='2D',output=False)
-    #print(seq.test_report())
+    seq = write_swift(N=32, fa_deg=90, L_over=1, enc_type='2D',output=True)
+    print(seq.test_report())
     #seq.plot(time_range=[0,200e-3])
