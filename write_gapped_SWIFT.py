@@ -18,15 +18,15 @@ from scipy.io import savemat, loadmat
 from scipy import integrate
 import matplotlib.pyplot as plt
 
-def write_swift(N, fa_deg, enc_type='3D', output=False):
+def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     # Let's do SWIFT
     # System
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     # Parameters
     FOV = 250e-3 # Field of view
-    N_seg = int(N / 2) # Number of points sampled on a radial spoke / number of segments 1 pulse is broken into
-    dx = FOV/N # Spatial resolution (isotropic)
+    #N_sample = int(N / 2) # Number of points sampled on a radial spoke / number of segments 1 pulse is broken into
+    dx = FOV / N # Spatial resolution (isotropic)
     dk = 1 / FOV # Spatial frequency resolution
 
     # Number of spokes, number of altitude angles, number of azimuthal angles
@@ -51,13 +51,15 @@ def write_swift(N, fa_deg, enc_type='3D', output=False):
     BW = 2.5e3 # from Siemens implementation paper
     R = 128 # Time-bandwidth product
     Tp = R / BW # Total pulse duration
-    dw = Tp / N_seg # Sampling dt
+    N_seg = int(L_over * R)
+    dw = Tp / N_seg # sampling dt
+
     dc = 0.5 # pulse duty cycle
     T_seg = dw * dc # Duration of 1 segment
     gap = dw - T_seg # time interval where RF is off in each segment
     adc_factor = 0.5 # Where during the gap lies the sample
     g_amp = dk / dw  # Net gradient amplitude
-    RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW)
+    RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW) # From gapped pulse paper?
 
 
 
@@ -68,13 +70,13 @@ def write_swift(N, fa_deg, enc_type='3D', output=False):
     g_delay = make_extended_trapezoid(channel='x', times=np.array([0, delay_TR]),
                                       amplitudes=np.array([g_amp, g_amp]), system=system)
     #dwell = ((1 - adc_factor) * gap - 200e-6) / 2 # This worked for 3D N=16 but not 2D N=128
-    dwell = ((1 - adc_factor) * gap - 100e-6) / 2
+    dwell = ((1 - adc_factor) * gap - 20e-6) / 2
 
     adc = make_adc(num_samples = 2, delay=T_seg + adc_factor * gap, dwell=dwell)
 
     # Find RF modulations
     AM, FM = make_HS_pulse(beta=beta, b1=RF_amp_max, bw=BW)
-    list_RFs = extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg)
+    list_RFs, total_flip = extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg)
     # Save information
     rf_complex = np.zeros((1,len(list_RFs)),dtype=complex)
     for u in range(len(list_RFs)):
@@ -120,11 +122,13 @@ def write_swift(N, fa_deg, enc_type='3D', output=False):
             q += 1
     #print(seq.test_report())
 
+    #ok, error_report = seq.check_timing()
 
-    savemat(f'swift_info_FA{fa_deg}_N{N}_{enc_type}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
+
+    savemat(f'swift_info_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
 
     if output:
-        seq.write(f'ADC2_swift_FA{fa_deg}_N{N}_{enc_type}.seq')
+        seq.write(f'ADC2_swift_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}.seq')
     return seq
 
 # RF pulse creation
@@ -142,12 +146,17 @@ def extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg):
     tau = 2*t/Tp - 1
     dw = Tp / N_seg
     phi_c = 0
+
+    total_flip = 0
+
     for n in range(N_seg):
         # Calculate amplitude and phase at corresponding point (beginning pt.)
-        list_RFs.append(make_block_pulse(flip_angle = AM(tau[n]), duration=T_seg,
+        list_RFs.append(make_block_pulse(flip_angle = 2*pi*AM(tau[n])*T_seg, duration=T_seg,
                                          phase_offset = phi_c))
+        total_flip += 2*pi*AM(tau[n])*T_seg
         dphi, _ = integrate.quad(FM, a = tau[n],b = tau[n+1])
         phi_c = phi_c + dphi
+    print(f'Total flip angle from AM: {total_flip}')
     return list_RFs
 
 def make_extended_trapezoid_check_zero(channel: str, amplitudes: Iterable = np.zeros(1), max_grad: float = 0,
@@ -173,6 +182,6 @@ if __name__ == '__main__':
     #seq.plot()
     #seq = write_swift(N=16, fa_deg=5, output=True)
 
-    seq = write_swift(N=32, fa_deg=3, enc_type='2D',output=True)
-    print(seq.test_report())
-    seq.plot(time_range=[0,200e-3])
+    seq = write_swift(N=32, fa_deg=5, L_over=1, enc_type='2D',output=False)
+    #print(seq.test_report())
+    #seq.plot(time_range=[0,200e-3])

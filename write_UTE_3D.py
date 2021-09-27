@@ -107,7 +107,7 @@ def write_UTE_3D(N, FOV, slab_thk, FA, TR):
 # - sampling locations are calculated in the same way as write_UTE_3D()
 
 def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
-                            use_double_acq=True, rf_center = 1, os_factor=1, rf_type='sinc', rf_dur=1e-3, save_seq=True):
+                            os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=False, save_seq=True):
     """
     Parameters
     ----------
@@ -142,20 +142,27 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
 
     ro_duration = 2.5e-3
     ro_os = os_factor  # Oversampling factor
-    # minRF_to_ADC_time = 50e-6 # this was not used.
-
     rf_spoiling_inc = 117  # RF spoiling increment value.
+
+    if use_half_pulse:
+        cp = 1
+    else:
+        cp = 0.5
+
+    tbw = 2
 
     # Sequence components
     if rf_type == 'sinc':
         rf, gz, gz_reph = make_sinc_pulse(flip_angle=FA * np.pi / 180, duration=rf_dur, slice_thickness=slab_thk,
-                                          apodization=0.5,
-                                          time_bw_product=2, center_pos=rf_center, system=system, return_gz=True)
+                                          apodization=0.5, time_bw_product=tbw, center_pos=cp, system=system, return_gz=True)
+        gz_ramp_reph = make_trapezoid(channel='z', area=-gz.fall_time * gz.amplitude / 2, system=system)
+
     elif rf_type == 'rect':
         rf = make_block_pulse(flip_angle=FA * np.pi/180, duration=rf_dur, slice_thickness=slab_thk, return_gz=False)
     elif rf_type == 'gauss':
         rf, gz, gz_reph = make_gauss_pulse(flip_angle=FA*np.pi/180, duration=rf_dur, slice_thickness=slab_thk,
                                            system=system, return_gz=True)
+        gz_ramp_reph = make_trapezoid(channel='z', area=-gz.fall_time * gz.amplitude / 2, system=system)
 
     # Asymmetry! (0 - fully rewound; 1 - hall-echo)
     Nro = np.round(ro_os * N)  # Number of readout points
@@ -171,58 +178,59 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
 
     # Calculate timing
     TE = gro.rise_time + adc.dwell * Nro / 2 * (1 - s)
-
     if rf_type == 'sinc' or rf_type == 'gauss':
-        TE += gz.fall_time + calc_duration(gro_pre, gz_reph)
-        delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_reph) - calc_duration(gz) - calc_duration(
+        TE += gz.fall_time + calc_duration(gro_pre)
+        delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gz) - calc_duration(
             gro)) / seq.grad_raster_time) * seq.grad_raster_time
     elif rf_type == 'rect':
         TE += calc_duration(gro_pre)
         delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
-
     assert np.all(delay_TR >= calc_duration(gro_spoil))  # The TR delay starts at the same time as the spoilers!
-
     print(f'TE = {TE * 1e6:.0f} us')
 
-    if rf_type != 'rect' and calc_duration(gz_reph) > calc_duration(gro_pre):
-        gro_pre.delay = calc_duration(gz_reph) - calc_duration(gro_pre)
+    C = int(use_half_pulse) + 1
 
     # Starting RF phase and increments
     rf_phase = 0
     rf_inc = 0
-
-    ktraj = np.zeros([Ns, int(adc.num_samples), 3])
-    u = 0
     Nline = Ntheta * Nphi
+    ktraj = np.zeros([Nline, int(adc.num_samples), 3])
+    u = 0
+
+
     for th in range(Ntheta):
         for ph in range(Nphi):
             unit_grad = np.zeros(3)
             unit_grad[0] = np.sin(thetas[th])*np.cos(phis[ph])
             unit_grad[1] = np.sin(thetas[th])*np.sin(phis[ph])
             unit_grad[2] = np.cos(thetas[th])
-            for c in range(use_double_acq+1):
+            # Two repeats if using half pulse
+            for c in range(C):
+                # RF spoiling
                 rf.phase_offset = (rf_phase / 180) * np.pi
                 adc.phase_offset = (rf_phase / 180) * np.pi
-                # (no need to change RF frequency?)
                 rf_inc = np.mod(rf_inc + rf_spoiling_inc, 360.0)
                 rf_phase = np.mod(rf_phase + rf_inc, 360.0)
 
-                # Reverse slice select amplitude if using double acqs
-                if rf_type == 'sinc' or rf_type == 'gauss':
-                    gz.amplitude = ((-1)**int(use_double_acq))*gz.amplitude
-                    gz_reph.amplitude = ((-1)**int(use_double_acq))*gz_reph.amplitude
-
+                # Rewinder and readout gradients, vectorized
                 gpx, gpy, gpz = make_oblique_gradients(gro_pre, unit_grad)
                 grx, gry, grz = make_oblique_gradients(gro, unit_grad)
                 gsx, gsy, gsz = make_oblique_gradients(gro_spoil, unit_grad)
 
-                gpz_reph = copy.deepcopy(gpz)
-                modify_gradient(gpz_reph, scale=(gpz.area+gz_reph.area)/gpz.area)
-
-
                 if rf_type == 'sinc' or rf_type == 'gauss':
+                    if use_half_pulse:
+                        # Reverse slice select amplitude (always z = 0)
+                        modify_gradient(gz, scale=-1)
+                        modify_gradient(gz_ramp_reph, scale=-1)
+                        gpz_reph = copy.deepcopy(gpz)
+                        modify_gradient(gpz_reph, scale=(gpz.area + gz_ramp_reph.area)/gpz.area)
+                    else:
+                        gpz_reph = copy.deepcopy(gpz)
+                        modify_gradient(gpz_reph, scale=(gpz.area + gz_reph.area) / gpz.area)
+
                     seq.add_block(rf, gz)
                     seq.add_block(gpx, gpy, gpz_reph)
+
                 elif rf_type == 'rect':
                     seq.add_block(rf)
                     seq.add_block(gpx, gpy, gpz)
@@ -230,9 +238,9 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
                 seq.add_block(grx, gry, grz, adc)
                 seq.add_block(gsx, gsy, gsz, make_delay(delay_TR))
 
-                print(f'Spokes: {u+1}/{Nline}')
-                ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
-                u += 1
+            print(f'Spokes: {u+1}/{Nline}')
+            ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
+            u += 1
 
 
 
@@ -245,8 +253,8 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
 
 
     if save_seq:
-        seq.write(f'ute_3d_rf-{rf_type}_rw_s{s}_N{N}_FOV{FOV}_TR{TR}_TE{TE}_C={use_double_acq+1}_rfcenter{rf_center}.seq')
-        savemat(f'ktraj_ute_3d_rw_s{s}_N{N}_FOV{FOV}_TR{TR}_TE{TE}_C={use_double_acq+1}_rfcenter{rf_center}.mat',
+        seq.write(f'ute_3d_rf-{rf_type}_rw_s{s}_N{N}_FOV{FOV}_TR{TR}_TE{TE}_C={use_half_pulse+1}.seq')
+        savemat(f'ktraj_ute_3d_rw_s{s}_N{N}_FOV{FOV}_TR{TR}_TE{TE}_C={use_half_pulse+1}.mat',
                 {'ktraj':ktraj})
 
     return seq, TE, ktraj
@@ -278,11 +286,11 @@ if __name__ == '__main__':
 
     # Fully rewound
     code_rf_dur = 100e-6
-    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=5, TR=10e-3, ro_asymmetry=0.97,
-                            use_double_acq=False, rf_center=0.5, os_factor=1, rf_type='sinc', rf_dur=code_rf_dur*10, save_seq=False)
+    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=5, TR=10e-3, ro_asymmetry=0,
+                            os_factor=2, rf_type='sinc', rf_dur=code_rf_dur*10, use_half_pulse=True, save_seq=False)
 
     #print(seq.test_report())
-    seq.write('ute_3d_64_s097_fullpulse_091321_slab250_TR10_os1_sinc_reph.seq')
-    savemat('ute_3d_64_s097_fullpulse_091321_slab250_TR10_os1_sinc_reph.mat',{'TE':TE, 'ktraj':ktraj})
+    seq.write('ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.seq')
+    savemat('ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.mat',{'TE':TE, 'ktraj':ktraj})
     #seq.plot(time_range=[0,60e-3])
 
