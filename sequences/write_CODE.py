@@ -8,8 +8,8 @@ from pypulseq.make_delay import make_delay
 from pypulseq.make_sinc_pulse import make_sinc_pulse
 from pypulseq.make_trap_pulse import make_trapezoid
 from pypulseq.opts import Opts
-from write_UTE_3D import get_radk_params_3D
-from sequence_helpers import *
+from sequences.write_UTE_3D import get_radk_params_3D
+from sequences.sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat, loadmat
 

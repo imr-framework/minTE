@@ -13,7 +13,7 @@ from pypulseq.make_extended_trapezoid import make_extended_trapezoid
 from pypulseq.opts import Opts
 import matplotlib.pyplot as plt
 from scipy.io import savemat, loadmat
-from sequence_helpers import *
+from sequences.sequence_helpers import *
 
 def write_UTE_3D(N, FOV, slab_thk, FA, TR):
     # System info for June (original)

@@ -12,7 +12,7 @@ from pypulseq.opts import Opts
 import matplotlib.pyplot as plt
 from scipy.io import savemat, loadmat
 from pypulseq.points_to_waveform import points_to_waveform
-from sequence_helpers import *
+from sequences.sequence_helpers import *
 
 # System options (copied from : amri-sos service form)
 def write_UTE_2D_original(N, FOV, thk, FA, TE, TR, T_rf=1.5e-3, minTE=False):
