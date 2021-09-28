@@ -59,7 +59,7 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     gap = dw - T_seg # time interval where RF is off in each segment
     adc_factor = 0.5 # Where during the gap lies the sample
     g_amp = dk / dw  # Net gradient amplitude
-    RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW) # From gapped pulse paper?
+    RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW) # From gapped pulse paper; units: [Hz]
 
 
 
