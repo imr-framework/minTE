@@ -1,27 +1,25 @@
 # Attempt at implementing gapped SWIFT!
 from math import pi
-import numpy as np
 from types import SimpleNamespace
 from typing import Iterable
 from pypulseq.Sequence.sequence import Sequence
-from pypulseq.calc_duration import calc_duration
 from pypulseq.make_adc import make_adc
 from pypulseq.opts import Opts
 from sequences.write_UTE_3D import get_radk_params_3D
 from sequences.sequence_helpers import *
-from pypulseq.make_gauss_pulse import make_gauss_pulse
 from pypulseq.make_block_pulse import make_block_pulse
 from scipy.io import savemat, loadmat
 from scipy import integrate
 import matplotlib.pyplot as plt
 from datetime import date
-def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
+
+def write_swift(N, R=128, TR=100e-3, fa_deg=90, L_over=1, enc_type='3D', spoke_os=1, output=False):
     # Let's do SWIFT
     # System
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     # Parameters
-    FOV = 250e-3 # Field of view
+    FOV = 350e-3 # Field of view
     #N_sample = int(N / 2) # Number of points sampled on a radial spoke / number of segments 1 pulse is broken into
     dx = FOV / N # Spatial resolution (isotropic)
     dk = 1 / FOV # Spatial frequency resolution
@@ -37,16 +35,13 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
         thetas = np.array([np.pi/2]) # Zero z-gradient.
         N_line = Nphi
 
-    phis = np.linspace(0, 2 * np.pi, Nphi, endpoint=False)
-
-    # Repetition time
-    TR = 100e-3 # there is one sweep of segmented FM pulse and one spoke sampled in each TR
+    phis = np.linspace(0, 2 * np.pi, Nphi*spoke_os, endpoint=False)
+    N_line = Nphi*spoke_os
 
     # Pulse parameters
     FA = fa_deg * pi / 180
     beta = 1
     BW = 2.5e3 # from Siemens implementation paper
-    R = 128 # Time-bandwidth product
     Tp = R / BW # Total pulse duration
     N_seg = int(L_over * R)
     dw = Tp / N_seg # sampling dt
@@ -58,8 +53,6 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     g_amp = dk / dw  # Net gradient amplitude
     RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW) # From gapped pulse paper; units: [Hz]
 
-
-
     # Gradient & ADC
     ramp_time = 100e-6
     delay_TR = TR - N_seg * dw
@@ -67,7 +60,9 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     g_delay = make_extended_trapezoid(channel='x', times=np.array([0, delay_TR]),
                                       amplitudes=np.array([g_amp, g_amp]), system=system)
     #dwell = ((1 - adc_factor) * gap - 200e-6) / 2 # This worked for 3D N=16 but not 2D N=128
-    dwell = ((1 - adc_factor) * gap - 20e-6) / 2
+    #dwell = ((1 - adc_factor) * gap - system.adc_dead_time) / 2
+    #dwell = ((1 - adc_factor) * gap) / 2
+    dwell = 10e-6
 
     adc = make_adc(num_samples = 2, delay=T_seg + adc_factor * gap, dwell=dwell)
 
@@ -83,6 +78,7 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     # Construct the sequence
     seq = Sequence(system)
     q = 0
+    y = 0
 
     ktraj = np.zeros((N_seg, N_line, 3))
     nline = 0
@@ -105,6 +101,8 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
                 # Make ramp-up from the last gradient & this constant gradient
                 # Add RF, ADC with delay, and split gradient together
                 seq.add_block(list_RFs[n], g_const_x, g_const_y, g_const_z, adc)
+                y = y+1
+                print('y')
 
             dk_3d = adc.delay * np.array([g_const_x.waveform[0], g_const_y.waveform[0], g_const_z.waveform[0]])
             ktraj[:, nline, 0] = dk_3d[0]*np.arange(1,N_seg+1)
@@ -124,10 +122,10 @@ def write_swift(N, fa_deg, L_over=1, enc_type='3D', output=False):
     today = date.today()
     todayf = today.strftime("%m%d%y")
 
-    savemat(f'swift_info_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
+    savemat(f'swift_info_FOV{FOV*1e3}_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.mat',{'thetas':thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj':ktraj})
 
     if output:
-        seq.write(f'ADC2_swift_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}.seq')
+        seq.write(f'ADC2_swift_FOV_{FOV*1e3}_FA{fa_deg}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.seq')
     return seq
 
 # RF pulse creation
@@ -180,6 +178,6 @@ if __name__ == '__main__':
     #seq.plot()
     #seq = write_swift(N=16, fa_deg=5, output=True)
 
-    seq = write_swift(N=32, fa_deg=90, L_over=1, enc_type='2D',output=True)
+    seq = write_swift(N=32, R=128, TR=100e-3, fa_deg=160, L_over=2, enc_type='2D', spoke_os=1, output=True)
     print(seq.test_report())
-    #seq.plot(time_range=[0,200e-3])
+    seq.plot(time_range=[0,200e-3])

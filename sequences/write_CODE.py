@@ -13,7 +13,7 @@ from sequences.sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat, loadmat
 
-def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D', extra_delay=0,
+def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
                        rf_type='gauss', os_factor=1, saveseq=False):
     # System options (copied from : amri-sos service form)
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
@@ -64,6 +64,8 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D', extr
     kmax = (1/dr)/2
     Nro = np.round(os_factor * N)
 
+
+    # TODO find out true TE - check CODE paper for def.
     # Asymmetry! (0 - fully rewound; 1 - half-echo)
     ro_asymmetry = (kmax - g_pre.area/2)/(kmax + g_pre.area/2)
     s = np.round(ro_asymmetry * Nro/2) / (Nro/2)
@@ -85,17 +87,16 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D', extr
     TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro)
     delayTR = make_delay(TRfill)
 
-    # What is TE?
-    if extra_delay is None:
-        extra_delay_time = 0
-    else:
-        extra_delay_time = extra_delay
 
-    TE = 0.5 * calc_duration(g_pre) + adc.delay + extra_delay_time
+
+    #TE = 0.5 * calc_duration(g_pre) + adc.delay
+    TE = 0.5 * calc_duration(g_pre) + g_ro.rise_time + adc.dwell * Nro / 2 * (1 - s)
     print(f'TE obtained: {TE*1e3} ms')
 
     # Initiate storage of trajectory
     ktraj = np.zeros([Ns, int(adc.num_samples), 3])
+
+    extra_delay_time = 0
 
     # Construct sequence
     # Initiate sequence
@@ -133,10 +134,11 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D', extr
 
 if __name__ == '__main__':
     # 083021
-    seq, ktraj, TE = make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',extra_delay=None,
-                             os_factor=1, saveseq=False,rf_type='gauss')
-    seq.write('code3d_64_gauss_090221_os2.seq')
-    savemat('info_code3d_64_gauss_090221_os2.mat',{'ktraj':ktraj,'TE':TE})
+    seq, ktraj, TE = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
+                             os_factor=1, saveseq=False, rf_type='gauss')
+    print(f'TE is {TE*1e3} ms')
+    #seq.write('code3d_fov253_64_TR100_FA10_102021.seq')
+    #savemat('code3d_fov253_64_TR100_FA10_102021.mat',{'ktraj':ktraj,'TE':TE})
     #seq.plot(time_range=[0,2e-3])
 
 

@@ -179,7 +179,11 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
     # Calculate timing
     TE = gro.rise_time + adc.dwell * Nro / 2 * (1 - s)
     if rf_type == 'sinc' or rf_type == 'gauss':
-        TE += gz.fall_time + calc_duration(gro_pre)
+        if use_half_pulse:
+            TE += gz.fall_time + calc_duration(gro_pre)
+        else:
+            TE += calc_duration(gz)/2 + calc_duration(gro_pre)
+
         delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gz) - calc_duration(
             gro)) / seq.grad_raster_time) * seq.grad_raster_time
     elif rf_type == 'rect':
@@ -187,6 +191,8 @@ def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_as
         delay_TR = np.ceil((TR - calc_duration(gro_pre) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
     assert np.all(delay_TR >= calc_duration(gro_spoil))  # The TR delay starts at the same time as the spoilers!
     print(f'TE = {TE * 1e6:.0f} us')
+
+
 
     C = int(use_half_pulse) + 1
 
@@ -285,12 +291,13 @@ if __name__ == '__main__':
     # seq.write(f'./seqs/{name}.seq')
 
     # Fully rewound
-    code_rf_dur = 100e-6
-    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=5, TR=10e-3, ro_asymmetry=0,
-                            os_factor=2, rf_type='sinc', rf_dur=code_rf_dur*10, use_half_pulse=True, save_seq=False)
-
+    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=253e-3, FA=10, TR=15e-3, ro_asymmetry=0.97,
+                            os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=False, save_seq=False)
+    print(f'TE is {TE*1e3} ms.')
     #print(seq.test_report())
-    seq.write('ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.seq')
-    savemat('seqs/ute_3d_64_s0_halfpulse_092321_FOV250_TR10_sinc_os2.mat', {'TE':TE, 'ktraj':ktraj})
+
+    #seq.write('ute3d_fov253_64_s097_half1ms_TR15_FA10_102021.seq')
+    #savemat('ute3d_fov253_64_s097_half1ms_TR15_FA10_102021.mat', {'TE':TE, 'ktraj':ktraj})
+
     #seq.plot(time_range=[0,60e-3])
 
