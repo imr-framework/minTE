@@ -39,7 +39,6 @@ def get_ktraj_with_rew(gx, gx_rew, gy, gy_rew, adc, display=False):
 
     return (kx + 1j * ky)
 
-
 def get_ktraj_3d(gx, gy, gz, adc, gx_pre_list=[], gy_pre_list=[], gz_pre_list=[]):
     # Calculate k-space trajectory assuming trapezoidal gx, gy, gz (same shape -> straight readout)
     # and uniform sampling starting at flat part of trapezoid

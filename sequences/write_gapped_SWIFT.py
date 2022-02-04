@@ -102,7 +102,7 @@ def write_swift(N, R=128, TR=100e-3, fa_deg=90, L_over=1, enc_type='3D', spoke_o
                 # Add RF, ADC with delay, and split gradient together
                 seq.add_block(list_RFs[n], g_const_x, g_const_y, g_const_z, adc)
                 y = y+1
-                print('y')
+                #print('y')
 
             dk_3d = adc.delay * np.array([g_const_x.waveform[0], g_const_y.waveform[0], g_const_z.waveform[0]])
             ktraj[:, nline, 0] = dk_3d[0]*np.arange(1,N_seg+1)
@@ -178,6 +178,6 @@ if __name__ == '__main__':
     #seq.plot()
     #seq = write_swift(N=16, fa_deg=5, output=True)
 
-    seq = write_swift(N=32, R=128, TR=100e-3, fa_deg=160, L_over=2, enc_type='2D', spoke_os=1, output=True)
+    seq = write_swift(N=32, R=128, TR=100e-3, fa_deg=160, L_over=2, enc_type='2D', spoke_os=1, output=False)
     print(seq.test_report())
     seq.plot(time_range=[0,200e-3])

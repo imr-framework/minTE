@@ -1,6 +1,5 @@
 # 3D ultra-short TE sequence (radial encoding)
-from math import pi
-import numpy as np
+
 from pypulseq.Sequence.sequence import Sequence
 from pypulseq.calc_duration import calc_duration
 from pypulseq.make_adc import make_adc
@@ -8,123 +7,51 @@ from pypulseq.make_delay import make_delay
 from pypulseq.make_sinc_pulse import make_sinc_pulse
 from pypulseq.make_block_pulse import make_block_pulse
 from pypulseq.make_gauss_pulse import make_gauss_pulse
-from pypulseq.make_trap_pulse import make_trapezoid
-from pypulseq.make_extended_trapezoid import make_extended_trapezoid
 from pypulseq.opts import Opts
-import matplotlib.pyplot as plt
 from scipy.io import savemat, loadmat
 from sequences.sequence_helpers import *
 
-def write_UTE_3D(N, FOV, slab_thk, FA, TR):
-    # System info for June (original)
-    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
-                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
-
-    # System info with adc_dead_time adjusted to 10e-6 - still plays!
-    #system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
-    #              rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=10e-6)
-    seq = Sequence(system=system)
-
-    # Derived parameters
-    dx = FOV/N
-    Ns, Ntheta, Nphi = get_radk_params_3D(dx, FOV) # Make this function
-    print(f'Using {Ns} spokes, with {Ntheta} thetas and {Nphi} phis')
-
-    # Slab selection
-    flip = FA*np.pi/180
-    st = 30e-3 # what is this?
-    rf_dur = 100e-6
-
-    # Make slice selecting components, for spoiler area
-    [rf_ss, gz_ss, gssr] = make_sinc_pulse(flip_angle=flip, duration=rf_dur, system=system, slice_thickness=slab_thk)
-
-    rf, __ = make_block_pulse(flip_angle=flip, duration=rf_dur, system=system)
-    #print(gz_ss)
-    # Readout gradients
-    dk = 1/FOV
-    k_width = N*dk
-    ro_time = 6.4e-3
-    gro = make_trapezoid(channel='x', system=system, flat_area=k_width, flat_time=ro_time, rise_time=20e-6)
-    adc = make_adc(N/2, duration=gro.flat_time, delay=gro.rise_time, system=system)
-
-    # Spoiling gradients in all directions
-    pre_time = 8e-4
-    gx_spoil = make_trapezoid(channel='x', system=system, area=gz_ss.area/2, duration=3*pre_time)
-    gy_spoil = make_trapezoid(channel='y', system=system, area=gz_ss.area/2, duration=3*pre_time)
-    gz_spoil = make_trapezoid(channel='z', system=system, area=gz_ss.area/2, duration=3*pre_time)
-
-    # Timing
-    delayTR = TR - calc_duration(gro) - calc_duration(rf) - calc_duration(gz_spoil)
-    #delayTRps = 0.8*delayTR # "to avoid gradient heating"
-    delayTRps = delayTR
-    delayTRps = delayTRps - np.mod(delayTRps, 1e-5)
-    delay = make_delay(delayTRps)
-
-    # Spoke angles
-    thetas = np.linspace(0, np.pi, Ntheta, endpoint=False)
-    phis = np.linspace(0, 2*np.pi, Nphi, endpoint=False)
-    ktraj = np.zeros([Ns, int(adc.num_samples), 3])
-
-    # What TE did we end up getting?
-
-    TE = calc_duration(rf)/2 + gro.rise_time
-
-    print(f"TE = {TE*1e3} ms is achieved.")
-    u = 0
-    # Add blocks to sequence
-    for th in range(Ntheta):
-        for ph in range(Nphi):
-            # Calculate oblique gradients
-            k_width_projx = k_width*np.sin(thetas[th])*np.cos(phis[ph])
-            k_width_projy = k_width*np.sin(thetas[th])*np.sin(phis[ph])
-            k_width_projz = k_width*np.cos(thetas[th])
-
-            gx = make_trapezoid(channel='x', system=system, flat_area=k_width_projx, flat_time=ro_time, rise_time=gro.rise_time)
-            gy = make_trapezoid(channel='y', system=system, flat_area=k_width_projy, flat_time=ro_time, rise_time=gro.rise_time)
-            gz = make_trapezoid(channel='z', system=system, flat_area=k_width_projz, flat_time=ro_time, rise_time=gro.rise_time)
-
-            # Slab excitation
-            #seq.add_block(rf, gz_ss)
-            #seq.add_block(gssr)
-            seq.add_block(rf)
-            # Readout and ADC sampling
-            seq.add_block(gx, gy, gz, adc)
-            # Go to end of TR + spoiler
-            seq.add_block(delay)
-            seq.add_block(gx_spoil, gy_spoil, gz_spoil)
-
-            # Store trajectory
-            ktraj[u,:,:] = get_ktraj_3d(gx, gy, gz, adc)
-            u += 1
-
-    return seq, ktraj, TE
-
-# TODO partially rewound (s=0 ~ s=1) 3D rGRE/UTE sequence.
-# - With choice of readout asymmetry (s=ro_asymmetry value)
-# - With RF spoiling (d = 117)
-# - With option to turn on or off the "opposite gradient acq." - if on, the acquisition time is doubled.
-# - With 0.2*(2Kmax) RO spoiler
-# - sampling locations are calculated in the same way as write_UTE_3D()
-
-def write_UTE_3D_rf_spoiled(N, FOV=250e-3, slab_thk=3e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
-                            os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=False, save_seq=True):
+def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
+                            os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=True, save_seq=True):
     """
     Parameters
     ----------
-    N : int
+    N : int, default=64
         Matrix size
-    FOV : float
+    FOV : float, default=0.25
         Field-of-view in [meters]
-    thk : float
-        Slice thickness in [meters]
-    FA : float
+    slab_thk : float, default=0.25
+        Slab thickness in [meters]
+    FA : float, default=10
         Flip angle in [degrees]
-    TR : float
+    TR : float, default=0.01
         Repetition time in [seconds]
-    ro_asymmetry : float
+    ro_asymmetry : float, default=0.97
         The ratio A/B where a A/(A+B) portion of 2*Kmax is omitted and B/(A+B) is acquired.
+    os_factor : float, default=1
+        Oversampling factor in readout
+        The number of readout samples is the nearest integer from os_factor*N
+    rf_type : str, default='sinc'
+        RF pulse shape - 'sinc', 'gauss', or 'rect'
+    rf_dur : float, default=0.001
+        RF pulse duration
+    use_half_pulse : bool, default=True
+        Whether to use half pulse excitation for shorter TE;
+        This doubles both the number of excitations and acquisition time
+    save_seq : bool, default=True
+        Whether to save this sequence as a .seq file
 
+    Returns
+    -------
+    seq : Sequence
+        PyPulseq 2D UTE sequence object
+    TE : float
+        Echo time of generated sequence in [seconds]
+    ktraj : np.ndarray
+        3D k-space trajectory [spoke, readout sample, 3] where
+        the last dimension refers to spatial frequency coordinates (kx, ky, kz)
     """
+
     # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
