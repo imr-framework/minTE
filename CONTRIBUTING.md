@@ -1,7 +1,7 @@
 # Contributing to minTE
 :thumbsup: :tada: First, thanks for contributing! :thumbsup: :tada:
 
-The following is a set of guidelines for contributing to Virtual Scanner. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
+The following is a set of guidelines for contributing to the minTE repository. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
 ## Table of contents
 1. [Contributing](#contributing-to-the-software)
@@ -18,7 +18,7 @@ This project and everyone participating in it is governed by the [minTE Code of 
 
 **PEP Style Guide for Python Code**
 
-Read through the [Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008/) and follow the coding conventions. If you notice any of Virtual-Scanner's code not adhering to PEP8, submit a pull request or open an issue.
+Read through the [Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008/) and follow the coding conventions. If you notice any of the code not adhering to PEP8, submit a pull request or open an issue.
 
 **Source code header**
 
@@ -27,7 +27,7 @@ Insert and fill out the following header comments at the top of every script in 
 Institution : (your university/research facility)
 Version : 1.0.0 
 ```
-Note that "Version" refers to the Virtual Scanner release you developed your code on. You can add more fields if needed. 
+Note that "Version" refers to the release you developed your code on. You can add more fields if needed. 
 
 **Documenting source code**
 
