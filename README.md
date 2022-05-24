@@ -8,9 +8,9 @@ The minTE repository provides parametrized, radial, short/ultrashort echo time M
 ## Quickstart
 ### Option 1: Local installation
 1. Download or clone the repository
-2. Set up the virtual environment making sure all packages listed in `requirements.txt` are installed;
-3. Run `python run_all_unit_tests.py` to ensure all functions work;
-4. Run `python seq_gen_demo.py` to generate and visualize the sequence variations.
+2. Set up and activate the virtual environment making sure all packages listed in `requirements.txt` are installed;
+3. From the root, run `python -m minTE.tests.run_all_unit_tests` to ensure all functions work;
+4. From the root, run `python -m minTE.quickstart.seq_gen_demo` to generate and visualize the sequence variations.
 
 ### Option 2: Google Colab Notebook 
 Open the [demo notebook](https://github.com/imr-framework/minTE/blob/main/minTE_quickstart.ipynb) in Google Colab and follow the instructions to generate and display a sequence file. 
