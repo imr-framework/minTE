@@ -1,4 +1,8 @@
 # Open-Source Magnetic Resonance Imaging with Minimal Echo Time
+
+<img title="PyPulseq Badge" src="https://img.shields.io/badge/made%20using-pypulseq-brightgreen" width="100">
+
+
 The minTE repository provides parametrized, radial, short/ultrashort echo time Magnetic Resonance Imaging (MRI) sequence in the Pulseq format [[1]](#references) along with reconstruction functions. Sequence variations include 2D and 3D partially-rewound RF-spoiled GRE and CODE [[2]](#references) generated with the PyPulseq [[3]](#references) library. 
 
 ## Quickstart
@@ -9,7 +13,7 @@ The minTE repository provides parametrized, radial, short/ultrashort echo time M
 4. Run `python seq_gen_demo.py` to generate and visualize the sequence variations.
 
 ### Option 2: Google Colab Notebook 
-Open the demo notebook (link) in Google Colab and follow the instructions to generate and display a sequence file. 
+Open the [demo notebook](https://github.com/imr-framework/minTE/blob/main/minTE_quickstart.ipynb) in Google Colab and follow the instructions to generate and display a sequence file. 
 
 ## Sequences and example parameters 
 Shared parameters are FOV = 253 mm, 2D slice thickness = 5 mm, flip angle = 10 degrees, and TR = 15 ms. 
@@ -34,6 +38,8 @@ seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=253e-3, thk=5e-3, sl
 seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=100e-3, flip=10, enc_type='3D',
                                     os_factor=1, save_seq=False, rf_type='gauss')
 ```
+## Reconstruction
+The functions `reconstruct_2d` and `reconstruct_3d` are provided [here](https://github.com/imr-framework/minTE/blob/main/minTE/recon/reconstruct_radial.py) that use PyNUFFT [[4,5]](#references) to generate images from non-cartesian k-spaces. The `'cg'` option is recommended for image quality. 
 
 ## Images
 ### ACR phantom 
@@ -62,3 +68,6 @@ resonance in medicine 77.4 (2017): 1544-1552.
 2. Park, Jang‐Yeon, et al. "Short echo‐time 3D radial gradient‐echo MRI using concurrent dephasing and excitation." Magnetic resonance in medicine 67.2 (2012): 428-436.
 3. Ravi, Keerthi, Sairam Geethanath, and John Vaughan. "PyPulseq: A Python Package for MRI Pulse Sequence Design."
 Journal of Open Source Software 4.42 (2019): 1725.
+4. Lin, Jyh-Miin. “Python Non-Uniform Fast Fourier Transform (PyNUFFT): An Accelerated Non-Cartesian MRI Package on a Heterogeneous Platform (CPU/GPU).” Journal of Imaging 4.3 (2018): 51.
+5. J.-M. Lin and H.-W. Chung, Pynufft: python non-uniform fast Fourier transform for MRI Building Bridges in Medical Sciences 2017, St John’s College, CB2 1TP Cambridge, UK
+
