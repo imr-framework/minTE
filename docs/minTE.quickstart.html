@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>minTE.quickstart package &#8212; minTE v1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE v1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.quickstart package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="minte-quickstart-package">
+<h1>minTE.quickstart package<a class="headerlink" href="#minte-quickstart-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-minTE.quickstart.seq_gen_demo">
+<span id="minte-quickstart-seq-gen-demo-module"></span><h2>minTE.quickstart.seq_gen_demo module<a class="headerlink" href="#module-minTE.quickstart.seq_gen_demo" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.demo_2D_UTE">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">demo_2D_UTE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_half_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.demo_2D_UTE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Demonstrate 2D UTE sequence generation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>use_half_pulse</strong> (<em>bool</em>) – Whether to use a half pulse. If False, a full pulse is used.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>seq</strong> (<em>Sequence</em>) – PyPulseq sequence object</p></li>
+<li><p><strong>ktraj</strong> (<em>np.ndarray</em>) – K-space trajectory of the radial sequence</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.demo_3D_UTE">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">demo_3D_UTE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_half_pulse</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.demo_3D_UTE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Demonstrate 3D UTE sequence generation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>use_half_pulse</strong> (<em>bool</em>) – Whether to use a half pulse. If False, a full pulse is used.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>seq</strong> (<em>Sequence</em>) – PyPulseq sequence object</p></li>
+<li><p><strong>ktraj</strong> (<em>np.ndarray</em>) – K-space trajectory of the radial sequence</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.demo_CODE">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">demo_CODE</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.demo_CODE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Demonstrate CODE sequence generation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>seq</strong> (<em>Sequence</em>) – PyPulseq sequence object</p></li>
+<li><p><strong>ktraj</strong> (<em>np.ndarray</em>) – K-space trajectory of the radial sequence</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.dialog_save_files">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">dialog_save_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ktraj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.dialog_save_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function for saving files locally</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.display_ktraj">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">display_ktraj</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ktraj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.display_ktraj" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays k-space trajectory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ktraj</strong> (<em>np.ndarray</em>) – Output kspace trajectory from any of the write_X functions</p></li>
+<li><p><strong>dim</strong> (<em>int</em>) – Dimensionality of k-space: 2 or 3</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.display_seq">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">display_seq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.display_seq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function; exports and displays a demo sequence</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.display_seq_interactive">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">display_seq_interactive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">all_waveforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">numpy.inf)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.display_seq_interactive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays timing diagram of any Pulseq seq object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>all_waveforms</strong> (<em>dict</em>) – Output from export_waveforms</p></li>
+<li><p><strong>time_range</strong> (<em>tuple</em>) – Display range; (start_time, end_time) in seconds within the sequence</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.export_waveforms">
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">export_waveforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">numpy.inf)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.export_waveforms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports all waveforms from a seq object with associated timings for easy plotting</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>time_range</strong> (<em>iterable</em><em>, </em><em>default=</em><em>(</em><em>0</em><em>, </em><em>np.inf</em><em>)</em>) – Time range (x-axis limits) for all waveforms. Default is 0 to infinity (entire sequence).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>all_waveforms</strong> – Dictionary containing all sequence waveforms and time array(s)
+The keys are listed here:
+‘t_adc’ - ADC timing array [seconds]
+‘t_rf’ - RF timing array [seconds]
+‘’
+‘adc’ - ADC complex signal (amplitude=1, phase=adc phase)
+‘rf’ - RF complex signal
+‘gx’ - x gradient
+‘gy’ - y gradient
+‘gz’ - z gradient</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-minTE.quickstart">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-minTE.quickstart" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">minTE.quickstart package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-minTE.quickstart.seq_gen_demo">minTE.quickstart.seq_gen_demo module</a></li>
+<li><a class="reference internal" href="#module-minTE.quickstart">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/minTE.quickstart.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE v1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.quickstart package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Gehua Tong.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>
