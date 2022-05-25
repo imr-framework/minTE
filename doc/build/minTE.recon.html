@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>minTE.recon package &#8212; minTE v1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE v1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.recon package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="minte-recon-package">
+<h1>minTE.recon package<a class="headerlink" href="#minte-recon-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-minTE.recon.reconstruct_radial">
+<span id="minte-recon-reconstruct-radial-module"></span><h2>minTE.recon.reconstruct_radial module<a class="headerlink" href="#module-minTE.recon.reconstruct_radial" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.recon.reconstruct_radial.reconstruct_2d">
+<span class="sig-prename descclassname"><span class="pre">minTE.recon.reconstruct_radial.</span></span><span class="sig-name descname"><span class="pre">reconstruct_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ktraj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.recon.reconstruct_radial.reconstruct_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconstruct 2D radial UTE data.</p>
+<dl class="simple">
+<dt>kspace<span class="classifier">np.ndarray</span></dt><dd><p>N_readout x N_channels x N_lines data matrix</p>
+</dd>
+<dt>ktraj<span class="classifier">np.ndarray</span></dt><dd><p>N_lines x N_readout shaped complex 2D kspace trajectory {kx + 1j*ky}</p>
+</dd>
+<dt>N<span class="classifier">integer</span></dt><dd><p>Isotropic image matrix size</p>
+</dd>
+<dt>maxiter<span class="classifier">integer</span></dt><dd><p>Maximum number of iterations to run in conjugate gradient reconstruction</p>
+</dd>
+<dt>half_pulse<span class="classifier">bool</span></dt><dd><p>Whether half pulse excitation was used</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>imspace</strong> (<em>np.ndarray</em>) – Complex multi-channel image space of size (N,N,N_channels)</p></li>
+<li><p><strong>images</strong> (<em>np.ndarray</em>) – Real sum-of-squares combined image of size (N,N)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.recon.reconstruct_radial.reconstruct_3d">
+<span class="sig-prename descclassname"><span class="pre">minTE.recon.reconstruct_radial.</span></span><span class="sig-name descname"><span class="pre">reconstruct_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kspace</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ktraj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.recon.reconstruct_radial.reconstruct_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconstruct 3D radial UTE/CODE data.</p>
+<dl class="simple">
+<dt>kspace<span class="classifier">np.ndarray</span></dt><dd><p>N_readout x N_channels x N_lines data matrix</p>
+</dd>
+<dt>ktraj<span class="classifier">np.ndarray</span></dt><dd><p>N_lines x N_readout x 3 shaped complex 2D kspace trajectory {(kx,ky,kz)}</p>
+</dd>
+<dt>N<span class="classifier">integer</span></dt><dd><p>Isotropic image matrix size</p>
+</dd>
+<dt>maxiter<span class="classifier">integer</span></dt><dd><p>Maximum number of iterations to run in conjugate gradient reconstruction</p>
+</dd>
+<dt>half_pulse<span class="classifier">bool</span></dt><dd><p>Whether half pulse excitation was used</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>imspace</strong> (<em>np.ndarray</em>) – Complex multi-channel image space of size (N,N,N,N_channels)</p></li>
+<li><p><strong>images</strong> (<em>np.ndarray</em>) – Real sum-of-squares combined image of size (N,N,N)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-minTE.recon">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-minTE.recon" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">minTE.recon package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-minTE.recon.reconstruct_radial">minTE.recon.reconstruct_radial module</a></li>
+<li><a class="reference internal" href="#module-minTE.recon">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/minTE.recon.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE v1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.recon package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Gehua Tong.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>
