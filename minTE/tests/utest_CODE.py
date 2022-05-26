@@ -3,8 +3,9 @@ import unittest
 import numpy as np
 from minTE.sequences.write_CODE import *
 
-class TestUTE3D(unittest.TestCase):
+class TestCODE(unittest.TestCase):
     def test_seq_generation(self):
+        print("Testing 3D CODE...")
         # Timing is checked within the function
         seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
                              os_factor=1, save_seq=False, rf_type='gauss')

@@ -44,10 +44,9 @@ def reconstruct_2d(kspace, ktraj, N=256, maxiter=50, half_pulse=True):
     # Load ktraj & data
     kt = ktraj
     kk = kspace
+    Nch = kspace.shape[1]
 
     # 3 slices reshaping
-    # kk = np.reshape(kk, [512,20,804,3])
-    # kk = np.swapaxes(kk,1,3)
     if half_pulse:
         kk = kk[:,:,0::2] + kk[:,:,1::2]
     kk = np.swapaxes(kk, 1, 2)
@@ -55,7 +54,7 @@ def reconstruct_2d(kspace, ktraj, N=256, maxiter=50, half_pulse=True):
     print("Data and info loaded.")
 
     # ------------------------------------------------------------
-    imspace = np.zeros((N, N, 20), dtype=complex)
+    imspace = np.zeros((N, N, Nch), dtype=complex)
     # Scale kspace trajectory to [-pi, pi]
     kt_sc = math.pi / np.max(np.absolute(kt))
     kt = kt * kt_sc
@@ -69,8 +68,10 @@ def reconstruct_2d(kspace, ktraj, N=256, maxiter=50, half_pulse=True):
     C = kk.shape[-1]
     for c in range(C):  # For each channel
         print(f'begin channel {c + 1}')
-        imspace[:, :, c] = NufftObj.solve(y=np.transpose(kk[:, :, c]).flatten(),
-                                        solver='cg', maxiter=maxiter)
+        #imspace[:, :, c] = NufftObj.solve(y=np.transpose(kk[:, :, c]).flatten(),
+        #                               solver='cg', maxiter=maxiter)
+        imspace[:,:,c] = NufftObj.adjoint(y=np.transpose(kk[:,:,c]).flatten())  # adjoint
+
         print(f'channel {c + 1} reconstructed')
 
     images = np.sqrt(np.sum(np.absolute(imspace)**2, axis=2))
@@ -115,17 +116,16 @@ def reconstruct_3d(kspace, ktraj, N=64, maxiter=50, half_pulse=True):
     # Load ktraj & data
     kt = ktraj
     kk = kspace
+    Nch = kspace.shape[1]
 
     # 3 slices reshaping
-    #kk = np.reshape(kk, [512,20,804,3])
-    #kk = np.swapaxes(kk,1,3)
     if half_pulse:
         kk = kk[:,:,0::2] + kk[:,:,1::2]
     kk = np.swapaxes(kk,1,2)
 
     print("Data and info loaded.")
     #------------------------------------------------------------
-    imspace = np.zeros((N, N, N, 20), dtype=complex)
+    imspace = np.zeros((N, N, N, Nch), dtype=complex)
     # Scale [-pi, pi]
     kt_sc = math.pi / np.max(np.absolute(kt))
     kt = kt * kt_sc
@@ -140,8 +140,9 @@ def reconstruct_3d(kspace, ktraj, N=64, maxiter=50, half_pulse=True):
     C = kk.shape[-1]
     for c in range(C):  # For each channel
         print(f'begin channel {c+1}')
-        imspace[:,:,:,c] = NufftObj.solve(y=np.transpose(kk[:,:,c]).flatten(),
-                                                  solver='cg',maxiter=maxiter)
+        #imspace[:,:,:,c] = NufftObj.solve(y=np.transpose(kk[:,:,c]).flatten(),
+        #                                          solver='cg',maxiter=maxiter)
+        imspace[:,:,:,c] = NufftObj.adjoint(y=np.transpose(kk[:,:,c].flatten()))
         print(f'channel {c + 1} reconstructed')
 
     images = np.sqrt(np.sum(np.absolute(imspace)**2, axis=3))

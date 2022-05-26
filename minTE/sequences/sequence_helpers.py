@@ -1,4 +1,4 @@
-                                                        # Helper functions for UTE sequence construction
+# Helper functions for UTE sequence construction
 import numpy as np
 import matplotlib.pyplot as plt
 from pypulseq.make_extended_trapezoid import make_extended_trapezoid

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from datetime import date
 from pypulseq.make_arbitrary_rf import make_arbitrary_rf
 
-def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', spoke_os=1, fm_type='full',output=False):
+def write_gapped_swift(N, BW, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', n_adc=2, spoke_os=1, fm_type='full',output=False):
     """
     Parameters
     ----------
@@ -36,6 +36,7 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
         The way frequency modulation is handled
         'none' - each pulse segment has a fixed phase
         'linear' - each pulse segment has a fixed frequency corresponding to FM
+        'full' - each pulse segment has complete FM based on the ideal pulse
     output : str, default=False
         Whether the sequence is saved as a seq file
 
@@ -60,10 +61,9 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
     system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
                   rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     # Parameters
-    FOV = 350e-3 # Field of view
+    FOV = 250e-3 # Field of view
     #N_sample = int(N / 2) # Number of points sampled on a radial spoke / number of segments 1 pulse is broken into
     dx = FOV / N # Spatial resolution (isotropic)
-    dk = 1 / FOV # Spatial frequency resolution
 
     # Number of spokes, number of altitude angles, number of azimuthal angles
     if enc_type == '3D':
@@ -81,8 +81,7 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
 
     # Pulse parameters
     FA = flip * pi / 180
-    beta = 1
-    BW = 2.5e3 # from Siemens implementation paper
+    beta = 5 # so that F1 is ~0.01 at tau = +- 1
     Tp = R / BW # Total pulse duration
     N_seg = int(L_over * R)
     dw = Tp / N_seg # sampling dt
@@ -91,7 +90,10 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
     T_seg = dw * dc # Duration of 1 segment
     gap = dw - T_seg # time interval where RF is off in each segment
     adc_factor = 0.5 # Where during the gap lies the sample
-    g_amp = dk / dw  # Net gradient amplitude
+
+    #g_amp = dk / dw  # Net gradient amplitude
+
+    g_amp = BW / FOV
     RF_amp_max = FA / (2*pi*np.power(beta,-1/2)*np.sqrt(R)/BW) # From gapped pulse paper; units: [Hz]
 
     # Gradient & ADC
@@ -105,12 +107,12 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
     #dwell = ((1 - adc_factor) * gap) / 2
     dwell = 10e-6
 
-    adc = make_adc(num_samples = 2, delay=T_seg + adc_factor * gap, dwell=dwell)
+    adc = make_adc(num_samples = n_adc, delay=T_seg + adc_factor * gap, dwell=dwell)
 
     # Find RF modulations
     AM, FM = make_HS_pulse(beta=beta, b1=RF_amp_max, bw=BW)
     list_RFs = extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg, fm_type=fm_type)
-    # Save informatione
+    # Save information
     rf_complex = np.zeros((1,len(list_RFs)),dtype=complex)
     for u in range(len(list_RFs)):
         rf_complex[0,u] = list_RFs[u].signal[0] * np.exp(1j*list_RFs[u].phase_offset)
@@ -143,7 +145,6 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
                 # Add RF, ADC with delay, and split gradient together
                 seq.add_block(list_RFs[n], g_const_x, g_const_y, g_const_z, adc)
                 y = y+1
-                #print('y')
 
             dk_3d = adc.delay * np.array([g_const_x.waveform[0], g_const_y.waveform[0], g_const_z.waveform[0]])
             ktraj[:, nline, 0] = dk_3d[0]*np.arange(1,N_seg+1)
@@ -160,11 +161,15 @@ def write_gapped_swift(N, R=128, TR=100e-3, flip=90, L_over=1, enc_type='3D', sp
     today = date.today()
     todayf = today.strftime("%m%d%y")
     seq_info = {'thetas': thetas, 'phis': phis, 'rf_complex': rf_complex, 'ktraj': ktraj}
-    savemat(f'swift_info_FOV{FOV*1e3}_FA{flip}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.mat',seq_info)
+    savemat(f'swiftV2_info_bw{BW}_nadc{n_adc}_FOV{FOV*1e3}_FA{flip}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.mat',seq_info)
     if output:
-        seq.write(f'ADC2_swift_FOV_{FOV*1e3}_FA{flip}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.seq')
+        seq.write(f'swiftV2_bw{BW}_nadc{n_adc}_FOV{FOV*1e3}_FA{flip}_N{N}_{enc_type}_L-over{L_over}_{todayf}_sos{spoke_os}.seq')
+
+    print(f'Gradient amplitude is {g_amp} Hz/m')
 
     return seq, seq_info
+
+
 
 # RF pulse creation
 def make_HS_pulse(beta, b1, bw):
@@ -187,17 +192,22 @@ def extract_chopped_pulses(AM, FM, Tp, N_seg, T_seg, fm_type):
     total_flip = 0
 
     if fm_type == 'none':
-        def FM(x):
+        def F_offset(x):
             return 0
+    else:
+        def F_offset(x):
+            return FM(x)
 
     for n in range(N_seg):
         # Calculate amplitude and phase at corresponding point (beginning pt.)
-        list_RFs.append(make_block_pulse(flip_angle = 2*pi*AM(tau[n])*T_seg, duration=T_seg,
-                                         freq_offset=FM(tau[n]), phase_offset = phi_c))
+        next_pulse = make_block_pulse(flip_angle = 2*pi*AM(tau[n])*T_seg, duration=T_seg,
+                                         freq_offset=-F_offset(tau[n]), phase_offset = phi_c)
+        list_RFs.append(next_pulse)
         total_flip += 2*pi*AM(tau[n])*T_seg
         dphi_bar, _ = integrate.quad(FM, a = tau[n],b = tau[n+1])
         phi_c = phi_c + dphi_bar*2*pi
     print(f'Total flip angle from AM: {total_flip}')
+
 
     return list_RFs
 
@@ -211,22 +221,19 @@ def make_extended_trapezoid_check_zero(channel: str, amplitudes: Iterable = np.z
         return make_extended_trapezoid(channel, amplitudes, max_grad, max_slew, system, skip_check, times)
 
 if __name__ == '__main__':
-    # Inspect HS1 pulse
-    #AM, FM = make_HS_pulse(beta=1)
-    #tmodel = np.linspace(-1,1,500)
-    #plt.plot(tmodel, AM(tmodel),'-k')
-    #plt.plot(tmodel, FM(tmodel),'-b')
-    #plt.show()
-    #seq = Sequence()
-    #TR = 100e-3
-    ##seq.read('swift_FA5_N16.seq')
-    #print(seq.test_report())
-    #seq.plot()
-    #seq = write_swift(N=16, fa_deg=5, output=True)
+    BWs = [1250]
+    L_overs = [2]
+    n_adcs = [2]
 
-    seq, __ = write_gapped_swift(N=16, R=128, TR=100e-3, flip=160, L_over=2, enc_type='3D', spoke_os=1, fm_type='linear',output=False)
-    print(seq.test_report())
-    seq.plot(time_range=[0,200e-3])
+    for u in range(1):
+        BW = BWs[u]
+        L_over = L_overs[u]
+        n_adc = n_adcs[u]
+        seq, __ = write_gapped_swift(N=64, BW=BW, R=128, TR=200e-3, flip=640, n_adc=n_adc, L_over=L_over, enc_type='2D',
+                                     spoke_os=1, fm_type='none',output=True)
+
+    #print(seq.test_report())
+    #seq.plot(time_range=[0,1])
 
     #ok, error_report = seq.check_timing()
-    seq.write('swift_with_FM_in_seg_3d_022222.seq')
+    #seq.write('swift_2d_FM_N64_FA160_032422.seq')

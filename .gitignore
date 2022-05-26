@@ -23,6 +23,7 @@ seqs/
 figures/
 data/
 pypulseq_demos/
+*.seq
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

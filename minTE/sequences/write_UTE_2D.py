@@ -179,7 +179,7 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
                 seq.add_block(gsx, gsy, make_delay(delay_TR_per_slice))
 
                 #ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
-        print(f'spoke {spoke_ind+1}/{Nr} added')
+        #print(f'spoke {spoke_ind+1}/{Nr} added')
         ktraj[u, :] = get_ktraj_with_rew(grx, gpx, gry, gpy, adc, display=False)
 
         u += 1
@@ -209,12 +209,12 @@ if __name__ == '__main__':
     FA = 10
 
     seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=N, Nr=Nr, FOV=FOV, thk=thk, slice_locs=[0],
-                                          FA=10, TR=15e-3, ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3,
+                                          FA=10, TR=15e-3, ro_asymmetry=0.97, use_half_pulse=True, rf_dur=0.6e-3,
                                           TE_use=None)
     print(f'TE is {TE*1e3} ms!')
     #print(seq.test_report())
 
-    #seq.write('ute2d_fov253_half1ms_s097_TR15_FA10_102021.seq')
-    #savemat('ute2d_fov253_half1ms_s097_TR15_FA10_102021.mat',{'ktraj':ktraj,'TE':TE})
+    seq.write('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.seq')
+    savemat('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.mat',{'ktraj':ktraj,'TE':TE})
 
     #seq.plot(time_range=[0,30e-3])

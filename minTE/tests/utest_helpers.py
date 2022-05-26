@@ -6,7 +6,9 @@ from minTE.sequences.write_CODE import *
 from pypulseq.make_trap_pulse import make_trapezoid
 from pypulseq.make_extended_trapezoid import make_extended_trapezoid
 
-class TestUTE3D(unittest.TestCase):
+class TestHelpers(unittest.TestCase):
+    print("Testing helper functions...")
+
     def test_combine_oblique_radial_readout_2d(self):
         g = make_trapezoid(channel='x',amplitude=5000,duration=1e-3,rise_time=1e-4)
         # Generate random unit gradients and random theta

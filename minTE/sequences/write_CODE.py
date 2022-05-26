@@ -12,7 +12,6 @@ from minTE.sequences.write_UTE_3D import get_radk_params_3D
 from minTE.sequences.sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat, loadmat
-# Change test
 
 def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
                        rf_type='gauss', os_factor=1, save_seq=True):
@@ -76,6 +75,7 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     # Make sequence components
     # Slice-selective RF pulse: 100 us, 15 deg gauss pulse
     FA = flip * pi / 180
+
     rf_dur = 100e-6
     thk_slab = FOV
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     # 083021
     seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
                              os_factor=1, save_seq=False, rf_type='gauss')
-    #print(f'TE is {TE*1e3} ms')
+    print(f'TE is {TE*1e3} ms')
     #seq.write('code3d_fov253_64_TR100_FA10_102021.seq')
     #savemat('code3d_fov253_64_TR100_FA10_102021.mat',{'ktraj':ktraj,'TE':TE})
     #seq.plot(time_range=[0,2e-3])

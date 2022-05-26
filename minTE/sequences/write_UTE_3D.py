@@ -171,7 +171,7 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
                 seq.add_block(grx, gry, grz, adc)
                 seq.add_block(gsx, gsy, gsz, make_delay(delay_TR))
 
-            print(f'Spokes: {u+1}/{Nline}')
+            #print(f'Spokes: {u+1}/{Nline}')
             ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
             u += 1
 
@@ -207,12 +207,11 @@ if __name__ == '__main__':
 
     # Fully rewound
     seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=253e-3, FA=10, TR=15e-3, ro_asymmetry=0.97,
-                            os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=False, save_seq=False)
+                            os_factor=1, rf_type='sinc', rf_dur=0.05e-3, use_half_pulse=True, save_seq=False)
     print(f'TE is {TE*1e3} ms.')
-    #print(seq.test_report())
-
-    #seq.write('ute3d_fov253_64_s097_half1ms_TR15_FA10_102021.seq')
-    #savemat('ute3d_fov253_64_s097_half1ms_TR15_FA10_102021.mat', {'TE':TE, 'ktraj':ktraj})
+    print(seq.test_report())
+    seq.write('ute3d_fov253_64_s097_rfdur50us_halfpulse_TR15_FA10_032422.seq')
+    savemat('ute3d_fov253_64_s097_rfdur50us_halfpulse_TR15_FA10_032422.mat', {'TE':TE, 'ktraj':ktraj})
 
     #seq.plot(time_range=[0,60e-3])
 
