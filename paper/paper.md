@@ -39,14 +39,26 @@ We have recently reported the implementation of open-source Ultra-short Echo Tim
 Each sequence can be generated with a Python function using custom input parameters. 
 
 * 2D UTE: a 2D radiofrequency-spoiled (RF-spoiled) radial Gradient Recalled Echo (rGRE) sequence. The k-space trajectory consisted of spokes that 
-can be rewound to any point between $k = -k_{max}$ and $k = 0$. Rewinding preserves the $k = 0$ point but increases the minimum TE. The number of spokes followed the Nyquist criterion [@brown2014magneticC14]. A sinc slice-selective RF pulse was used for excitation with two options: full-pulse and half-pulse. The latter used two excitations per spoke with halved pulse duration and opposite slice selective gradients [@nielsen1999ultra] (see \autoref{fig:halfpulse}). This allows the sequence to achieve a shorter TE but also doubles the acquisition time. In both versions, RF spoiling with an increment of 117 degrees [@zur1991spoiling] was employed to allow shorter Repetition Times (TRs). Example parameters using the half pulse option were TR = 15 ms, TE = 449 us, flip angle (FA) = 10 degrees, Field-Of-View (FOV) = 253 mm, slice thickness = 5 mm, and matrix size = 256 x 256. Example images are shown in \autoref{fig:2dute}. 
+can be rewound to any point between $k = -k_{max}$ and $k = 0$. Rewinding preserves the $k = 0$ point but increases the minimum TE. The number of spokes followed the Nyquist criterion [@brown2014magneticC14]. A sinc slice-selective RF pulse was used for excitation with two options: full-pulse and half-pulse. The latter used two excitations per spoke with halved pulse duration and opposite slice selective gradients [@nielsen1999ultra] (see \autoref{fig:halfpulse}). This allows the sequence to achieve a shorter TE but doubles the acquisition time. In both versions, RF spoiling with an increment of 117 degrees [@zur1991spoiling] was employed to allow shorter Repetition Times (TRs). Example parameters using the half pulse option were TR = 15 ms, TE = 449 us, flip angle (FA) = 10 degrees, Field-Of-View (FOV) = 253 mm, slice thickness = 5 mm, and matrix size = 256 x 256. Example images are shown in \autoref{fig:2dute}. 
 
 * 3D UTE: a 3D RF-spoiled rGRE sequence. The k-space trajectory was similar to 2D UTE but with spokes in all directions in 3D space with equal azimuthal and polar angle spacing. Example parameters using the half pulse technique were TR = 15 ms, TE = 119 us, FA = 10 degrees, FOV = 250 mm, slab thickness = 253 mm, and matrix size = 64 x 64 x 64. Example images are shown in \autoref{fig:3dute}.
 
 * CODE: a version of the COcurrent Dephasing and Excitation(CODE) sequence [@park2012short], this implementation used the same gradient axis for both slab selection and readout. Slab excitation happened at a different 3D orientation for each readout and covered the FOV of interest in all directions. Gaussian RF pulses were used and the k-space sampling was similar to the partially rewound 3D UTE. Example parameters were TR = 15 ms, TE = 320 us, FA = 10 degrees, FOV = slab thickness = 253 mm, and matrix size = 64 x 64 x 64. Example images are shown in \autoref{fig:code}.
 
-## Simulation 
-Slice profiles of the half-pulse and full pulse excitation modes are shown in \autoref{fig:halfpulse}. The profiles were generated using the RF simulation module of Virtual Scanner 2.0 [@vsjoss; @vsISMRM2022].  
+## Half-pulse method and simulation  
+A conceptual diagram of the half-pulse excitation mode is shown in \autoref{fig:halfpulse}. The excitation k-space concept can be used to explain why the sum of the two half-pulse acquisitions is equivalent to the full pulse acquisition [@smalltip; @halfpulseMRA]. At small flip angles, the final $M_{xy}$ can be expressed as an integral across $B_1(t)$, the RF excitation, multiplied by a complex exponential phase term: 
+
+\begin{equation}\label{eq:mxy_profile}
+M_{xy}(z) = i\gamma M_0\int_{0}^{T} B_1(t) e^{ik(t)z} dt
+\end{equation}
+
+The phase scales with $k(t)$, the "excitation k-space", which is expressed as the following:
+
+\begin{equation}\label{eq:k_exc}
+k(t) = -\gamma \int_{t}^{T} G(s) ds
+\end{equation}
+
+The excitation k-space plot for each pulse is shown in the third row of \autoref{fig:halfpulse}. The colored area indicate that the integral over the full pulse is equal to the sum of the integrals of the two half pulses, where the second one has a reversed gradient. Moreover, there is no net phase dispersion across the slice due to the even symmetry of the RF pulse and the odd symmetry of excitation k-space. For the full pulse, this can only be achieved by adding the refocusing gradient at the end; for the half pulses, this condition is automatically satisfied. Slice profiles of the half-pulse and full pulse excitation modes are shown in \autoref{fig:halfpulsesim}. They were generated using the RF simulation module of Virtual Scanner 2.0 [@vsjoss; @vsISMRM2022].  
 
 ## Reconstruction
 Non-cartesian econstruction scripts are provided. The reconstruction is a two-step process: first, pre-processing of the raw data into a form that is sorted as a 2D matrix of size (number of ADC samples, number of readouts) and ready for gridding; second, reconstruction using the NUFFT[@fessler2003nonuniform; @lin2018python] library converts 2D or 3D non-Cartesian data to 2D images or 3D volumes. 
@@ -64,8 +76,8 @@ The minTE repository will play a role in the development of MRI methods in inhom
 ![2D UTE images of slice 5 of the ACR phantom. Left: half-pulse acquisition; right: full-pulse acquisition \label{fig:2dute}](2dute.png)
 ![3D UTE images of the ACR phantom. Left: half-pulse acquisition; right: full-pulse acquisition \label{fig:3dute}](3dute.png)
 ![CODE images of the ACR phantom. \label{fig:code}](code.png)
-![How half-pulse excitations work. \label{fig:halfpulse}](halfpulse.png)
-
+![Conceptual diagram for half-pulse excitation. The half-pulse scheme uses only the first 50% of the RF pulse but repeats the excitation using a negative slice-selective gradient. This cuts the excitation time by half and eliminates the refocusing gradient, but doubles acquisition time. Excitation k-space at the small tip angle limit can be used to show that adding the two half-pulse acquisitions produces the same slice profile as the original full pulse does [@smalltip;@halfpulseMRA]. The colored areas on row three show mathematically equivalent phase terms produced by the half-pulses that match the full-pulse when integrated across the RF amplitude. \label{fig:halfpulse}](half_pulse_conceptual.png)
+![Simulated slice profiles for half-pulse excitation. Slice profiles, both magnitude and phase, are shown of (A) the first half-pulse excitation with a positive gradient; (B) the second half-pulse excitation with a negative gradient; (C) the sum of (A) and (B) which produces a slice profile with uniform phase; and (D) the full-pulse profile showing a linear phase dispersion at the end of the RF excitation that needs to be refocused.  \label{fig:halfpulsesim}](half_pulse_simulation.png)
 
 
 # References
