@@ -9,8 +9,11 @@ The minTE repository provides parametrized, radial, short/ultrashort echo time M
 ### Option 1: Local installation
 1. Download or clone the repository
 2. Set up and activate the virtual environment making sure all packages listed in `requirements.txt` are installed;
-3. From the root, run `python -m minTE.tests.run_all_unit_tests` to ensure all functions work;
-4. From the root, run `python -m minTE.quickstart.seq_gen_demo` to generate and visualize the sequence variations.
+3. Note that if virtual-scanner is not automatically installed by the IDE through `requirements.txt`, you need to run the following on the command line with the virtual environment activated:
+`pip install git+https://github.com/imr-framework/virtual-scanner.git@2ed303d42038449e28ebe44fa4177541cabe8eb2
+`
+5. From the root, run `python -m minTE.tests.run_all_unit_tests` to ensure all functions work;
+6. From the root, run `python -m minTE.quickstart.seq_gen_demo` to generate and visualize the sequence variations.
 
 ### Option 2: Google Colab Notebook 
 Open the [demo notebook](https://github.com/imr-framework/minTE/blob/main/minTE_quickstart.ipynb) in Google Colab and follow the instructions to generate and display a sequence file. 
