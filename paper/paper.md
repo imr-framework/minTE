@@ -53,13 +53,13 @@ can be rewound to any point between $k = -k_{max}$ and $k = 0$. Rewinding preser
 
 
 ## Half-pulse method and simulation  
-A conceptual diagram of the half-pulse excitation mode is shown in \autoref{fig:halfpulse}. The excitation k-space concept can be used to explain why the sum of the two half-pulse acquisitions is equivalent to the full pulse acquisition [@smalltip; @halfpulseMRA]. At small flip angles, the final $M_{xy}$ can be expressed as an integral across $B_1(t)$, the RF excitation, multiplied by a complex exponential phase term: 
+A conceptual diagram of the half-pulse excitation mode is shown in \autoref{fig:halfpulse}. The excitation k-space concept can be used to explain why the sum of the two half-pulse acquisitions is equivalent to the full pulse acquisition [@smalltip; @halfpulseMRA]. At small flip angles, the final $M_{xy}$ can be expressed as an integral across $B_1(t)$  multiplied by a complex exponential phase term: 
 
 \begin{equation}\label{eq:mxy_profile}
 M_{xy}(z) = i\gamma M_0\int_{0}^{T} B_1(t) e^{ik(t)z} dt
 \end{equation}
 
-The phase scales with $k(t)$, the "excitation k-space", which is expressed as the following:
+Here, $T$ is the RF pulse duration. The phase scales with $k(t)$, the "excitation k-space", which is expressed as the following:
 
 \begin{equation}\label{eq:k_exc}
 k(t) = -\gamma \int_{t}^{T} G(s) ds
@@ -69,19 +69,16 @@ The excitation k-space plot for each pulse is shown in the third row of \autoref
 
 ![Conceptual diagram for half-pulse excitation. The half-pulse scheme uses only the first 50% of the RF pulse but repeats the excitation using a negative slice-selective gradient. This cuts the excitation time by half and eliminates the refocusing gradient, but doubles acquisition time. Excitation k-space at the small tip angle limit can be used to show that adding the two half-pulse acquisitions produces the same slice profile as the original full pulse does [@smalltip;@halfpulseMRA]. The colored areas on row three show mathematically equivalent phase terms produced by the half-pulses that match the full-pulse when integrated across the RF amplitude.\label{fig:halfpulse}](half_pulse_conceptual.png)
 
-
 ![Simulated slice profiles for half-pulse excitation. Slice profiles, both magnitude and phase, are shown of (A) the first half-pulse excitation with a positive gradient; (B) the second half-pulse excitation with a negative gradient; (C) the sum of (A) and (B) which produces a slice profile with uniform phase; and (D) the full-pulse profile showing a linear phase dispersion at the end of the RF excitation that needs to be refocused.\label{fig:halfpulsesim}](half_pulse_simulation.png)
 
-
-
 ## Reconstruction
-Non-cartesian econstruction scripts are provided. The reconstruction is a two-step process: first, pre-processing of the raw data into a form that is sorted as a 2D matrix of size (number of ADC samples, number of readouts) and ready for gridding; second, reconstruction using the NUFFT[@fessler2003nonuniform; @lin2018python] library converts 2D or 3D non-Cartesian data to 2D images or 3D volumes. 
+Non-cartesian reconstruction scripts are provided. The reconstruction is a two-step process: first, pre-processing sorts the raw data into a 2D matrix of size (number of ADC samples, number of readouts) ready for gridding; second, reconstruction using the NUFFT[@fessler2003nonuniform; @lin2018python] library converts 2D or 3D non-Cartesian data to 2D images or 3D volumes. 
 
 ## Documentation
-The three minTE sequences were documented using our open-source sequence validation framework [@tong2022framework]. The PDF forms and data can be found under the "documentation" directroy in the repository. 
+The three minTE sequences were documented using our open-source sequence validation framework [@tong2022framework]. The PDF forms and data can be found under the "documentation" directory in the repository. 
 
 # Statement of Need
-UTE sequences visualize tissues with short $T_2$ and $T_2^*$ values. The ability to recover signal from such tissues lends them to musculoskeletal applications such as joint and bone imaging [@holmes2005mrjoint; @jerban2020updatebone]. UTE has also been validated as a non-invasive way of monitoring the lungs of COVID-19 patients [@yang2020clinical]. Complete open-source pipelines of these sequences will help improve the reproducibility of multi-site imaging studies [@tong2022framework; @karakuzu2021vendor; @clarke2020multi]. Sites with the Pulseq interpreter [@layton2017pulseq] or the TOPPE interpreter [@nielsen2018toppe] installed can easily standardize sequences with full transparency of all waveforms. In addition, it promotes access to MRI [@geethanath2019accessible] by providing both customizable sequences and reconstruction code without the need for platform-specific training or access. 
+UTE sequences visualize tissues with short $T_2$ and $T_2^*$ values. The ability to recover signal from such tissues lends them to musculoskeletal applications such as joint and bone imaging [@holmes2005mrjoint; @jerban2020updatebone]. UTE has also been validated as a non-invasive way of monitoring the lungs of COVID-19 patients [@yang2020clinical]. Complete open-source pipelines of these sequences will help improve the reproducibility of multi-site imaging studies [@tong2022framework; @karakuzu2021vendor; @clarke2020multi]. Sites with the Pulseq interpreter [@layton2017pulseq] or the TOPPE interpreter [@nielsen2018toppe] installed can easily standardize sequences with full transparency of all waveforms. In addition, it promotes access to MRI by providing both customizable sequences and reconstruction code without the need for platform-specific training or access [@geethanath2019accessible]. 
  
 # Ongoing Research Projects 
 The minTE repository will play a role in the development of MRI methods in inhomogeneous B0 fields which produce short $T_2^*$. Comparsions to state-of-the-art UTE images are needed for sequence families like Multi-Spectral Imaging (MSI) [@MSIreview].
