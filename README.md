@@ -53,7 +53,7 @@ The functions `reconstruct_2d` and `reconstruct_3d` are provided [here](https://
 <p float="left" align="middle">
   <img src="https://github.com/imr-framework/minTE/blob/main/minTE/figs/ute_3d_full_acr.png" width="300" />
   <img src="https://github.com/imr-framework/minTE/blob/main/minTE/figs/ute_3d_half_acr.png" width="300" />
-  <img src="https://github.com/imr-framework/minTE/blob/main/minTE/figs/3D_code_os1_090221.png" width="260" />
+  <img src="https://github.com/imr-framework/minTE/blob/main/minTE/figs/3D_code.png" width="260" />
 </p>
 
 
