@@ -4,14 +4,6 @@ minTE.sequences package
 Submodules
 ----------
 
-minTE.sequences.archived\_sequences module
-------------------------------------------
-
-.. automodule:: minTE.sequences.archived_sequences
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 minTE.sequences.sequence\_helpers module
 ----------------------------------------
 

@@ -10,6 +10,7 @@ Subpackages
    minTE.quickstart
    minTE.recon
    minTE.sequences
+   minTE.sim
 
 Module contents
 ---------------
