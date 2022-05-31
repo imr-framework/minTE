@@ -63,6 +63,9 @@ The excitation k-space plot for each pulse is shown in the third row of \autoref
 ## Reconstruction
 Non-cartesian econstruction scripts are provided. The reconstruction is a two-step process: first, pre-processing of the raw data into a form that is sorted as a 2D matrix of size (number of ADC samples, number of readouts) and ready for gridding; second, reconstruction using the NUFFT[@fessler2003nonuniform; @lin2018python] library converts 2D or 3D non-Cartesian data to 2D images or 3D volumes. 
 
+## Documentation
+The three minTE sequences were documented using our open-source sequence validation framework [@tong2022framework]. The PDF forms and data can be found under the "documentation" directroy in the repository. 
+
 # Statement of Need
 UTE sequences visualize tissues with short $T_2$ and $T_2^*$ values. The ability to recover signal from such tissues lends them to musculoskeletal applications such as joint and bone imaging [@holmes2005mrjoint; @jerban2020updatebone]. UTE has also been validated as a non-invasive way of monitoring the lungs of COVID-19 patients [@yang2020clinical]. Complete open-source pipelines of these sequences will help improve the reproducibility of multi-site imaging studies [@tong2022framework; @karakuzu2021vendor; @clarke2020multi]. Sites with the Pulseq interpreter [@layton2017pulseq] or the TOPPE interpreter [@nielsen2018toppe] installed can easily standardize sequences with full transparency of all waveforms. In addition, it promotes access to MRI [@geethanath2019accessible] by providing both customizable sequences and reconstruction code without the need for platform-specific training or access. 
  
