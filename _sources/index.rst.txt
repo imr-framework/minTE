@@ -1,5 +1,5 @@
 .. minTE documentation master file, created by
-   sphinx-quickstart on Tue May 24 13:44:27 2022.
+   sphinx-quickstart on Mon May 30 21:24:33 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 

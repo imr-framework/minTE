@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>minTE.sim package &#8212; minTE 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.sim package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="minte-sim-package">
+<h1>minTE.sim package<a class="headerlink" href="#minte-sim-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-minTE.sim.display_simulated_pulses">
+<span id="minte-sim-display-simulated-pulses-module"></span><h2>minTE.sim.display_simulated_pulses module<a class="headerlink" href="#module-minTE.sim.display_simulated_pulses" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.sim.display_simulated_pulses.display_simulated_pulses">
+<span class="sig-prename descclassname"><span class="pre">minTE.sim.display_simulated_pulses.</span></span><span class="sig-name descname"><span class="pre">display_simulated_pulses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.sim.display_simulated_pulses.display_simulated_pulses" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="minte-sim-halfpulse-conceptual-display-module">
+<h2>minTE.sim.halfpulse_conceptual_display module<a class="headerlink" href="#minte-sim-halfpulse-conceptual-display-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-minTE.sim.rf_simulations_for_UTE">
+<span id="minte-sim-rf-simulations-for-ute-module"></span><h2>minTE.sim.rf_simulations_for_UTE module<a class="headerlink" href="#module-minTE.sim.rf_simulations_for_UTE" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.sim.rf_simulations_for_UTE.display_rf_profile">
+<span class="sig-prename descclassname"><span class="pre">minTE.sim.rf_simulations_for_UTE.</span></span><span class="sig-name descname"><span class="pre">display_rf_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.sim.rf_simulations_for_UTE.display_rf_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays a simulated RF profile (transverse magnetization only)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signals</strong> (<em>numpy.ndarray</em>) – n_spins x n_timepoints simulated signal; only the last time point is displayed</p></li>
+<li><p><strong>bw</strong> (<em>float</em>) – Simulation bandwidth</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Plot title</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.sim.rf_simulations_for_UTE.display_rf_pulse">
+<span class="sig-prename descclassname"><span class="pre">minTE.sim.rf_simulations_for_UTE.</span></span><span class="sig-name descname"><span class="pre">display_rf_pulse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.sim.rf_simulations_for_UTE.display_rf_pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays a PyPulseq RF pulse</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rf</strong> (<em>SimpleNamespace</em>) – PyPulseq rf pulse (obtained with seq.get_block(n).rf)</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Plot title</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="minTE.sim.rf_simulations_for_UTE.simulate_ute_pulses">
+<span class="sig-prename descclassname"><span class="pre">minTE.sim.rf_simulations_for_UTE.</span></span><span class="sig-name descname"><span class="pre">simulate_ute_pulses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_half_pulse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rf_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.sim.rf_simulations_for_UTE.simulate_ute_pulses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate pulses from a 2D UTE sequence</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_half_pulse</strong> (<em>bool</em>) – Whether to simulate a half pulse. If False, a full pulse is simulated.</p></li>
+<li><p><strong>rf_index</strong> (<em>int</em>) – Which RF pulse to use. rf_index = 2 means the second RF pulse of the seq is simulated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-minTE.sim">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-minTE.sim" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">minTE.sim package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-minTE.sim.display_simulated_pulses">minTE.sim.display_simulated_pulses module</a></li>
+<li><a class="reference internal" href="#minte-sim-halfpulse-conceptual-display-module">minTE.sim.halfpulse_conceptual_display module</a></li>
+<li><a class="reference internal" href="#module-minTE.sim.rf_simulations_for_UTE">minTE.sim.rf_simulations_for_UTE module</a></li>
+<li><a class="reference internal" href="#module-minTE.sim">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/minTE.sim.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">minTE 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">minTE.sim package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Gehua Tong.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
+    </div>
+  </body>
+</html>
