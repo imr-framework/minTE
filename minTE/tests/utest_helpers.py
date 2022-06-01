@@ -7,8 +7,6 @@ from pypulseq.make_trap_pulse import make_trapezoid
 from pypulseq.make_extended_trapezoid import make_extended_trapezoid
 
 class TestHelpers(unittest.TestCase):
-    print("Testing helper functions...")
-
     def test_combine_oblique_radial_readout_2d(self):
         g = make_trapezoid(channel='x',amplitude=5000,duration=1e-3,rise_time=1e-4)
         # Generate random unit gradients and random theta
@@ -31,9 +29,9 @@ class TestHelpers(unittest.TestCase):
         gx, gy, gz = combine_oblique_radial_readout_2d(g, ug1, ug2pn, alpha)
 
         # Check amplitude
-        np.testing.assert_equal(gx.amplitude, 5000*(ug1[0]*np.cos(alpha) + ug2pn[0]*np.sin(alpha)))
-        np.testing.assert_equal(gy.amplitude, 5000*(ug1[1]*np.cos(alpha) + ug2pn[1]*np.sin(alpha)))
-        np.testing.assert_equal(gz.amplitude, 5000*(ug1[2]*np.cos(alpha) + ug2pn[2]*np.sin(alpha)))
+        np.testing.assert_almost_equal(gx.amplitude, 5000*(ug1[0]*np.cos(alpha) + ug2pn[0]*np.sin(alpha)))
+        np.testing.assert_almost_equal(gy.amplitude, 5000*(ug1[1]*np.cos(alpha) + ug2pn[1]*np.sin(alpha)))
+        np.testing.assert_almost_equal(gz.amplitude, 5000*(ug1[2]*np.cos(alpha) + ug2pn[2]*np.sin(alpha)))
 
     def test_get_ktraj(self):
         # Set up gx, gy, adc using known k-space traj - and compare output to it
@@ -69,8 +67,6 @@ class TestHelpers(unittest.TestCase):
         gy_rew = make_trapezoid(channel='y',system=Opts(), area=-gy.area/2, duration=2.5e-3)
 
         adc = make_adc(num_samples=n, system=Opts(), duration=gx.flat_area, delay=gx.rise_time)
-
-
         ktraj_complex = get_ktraj_with_rew(gx, gx_rew, gy, gy_rew, adc, display=False)
 
         # Check: shape, type
@@ -78,11 +74,9 @@ class TestHelpers(unittest.TestCase):
         self.assertIsInstance(ktraj_complex, np.ndarray)
         self.assertIs(type(ktraj_complex[0]), np.complex128)
         # Check: values
-
         kx = np.cos(theta) * np.arange(0, n * dk, dk) + 0.5 * gx.rise_time * gx.amplitude + gx_rew.area
         ky = np.sin(theta) * np.arange(0, n * dk, dk) + 0.5 * gy.rise_time * gy.amplitude + gy_rew.area
         np.testing.assert_array_almost_equal(ktraj_complex, kx + 1j * ky)
-
 
     def test_get_ktraj_3d(self):
         # Set up gx, gy, adc using known k-space traj - and compare output to it
@@ -110,6 +104,8 @@ class TestHelpers(unittest.TestCase):
         self.assertIsInstance(ktraj, np.ndarray)
         np.testing.assert_equal(ktraj.shape,[n,3])
 
+        self.assertEqual(1,0)
+
         # Check: values
         kx = np.sin(theta) * np.cos(phi) * np.arange(0, n * dk, dk) + 0.5 * gx.rise_time * gx.amplitude + gx_rew.area
         ky = np.sin(theta) * np.sin(phi) * np.arange(0, n * dk, dk) + 0.5 * gy.rise_time * gy.amplitude + gy_rew.area
@@ -118,7 +114,6 @@ class TestHelpers(unittest.TestCase):
         np.testing.assert_array_almost_equal(ktraj[:,0], kx)
         np.testing.assert_array_almost_equal(ktraj[:,1], ky)
         np.testing.assert_array_almost_equal(ktraj[:,2], kz)
-
 
     def test_get_ktraj_3d_rew_delay(self):
         # Set up gx, gy, adc using known k-space traj - and compare output to it
@@ -163,11 +158,11 @@ class TestHelpers(unittest.TestCase):
         sc = np.random.rand() + 0.5
         g0 = make_extended_trapezoid(channel='x',system=Opts(), times=[0,1e-3,6e-3,7e-3],amplitudes=[4e3,5e3,5e3,6e3])
         g1 = make_scaled_extended_trapezoid(channel='x',system=Opts(), scale=1,
-                                            times=[0,1e-3,6e-3,7e-3],amplitudes=[4e3,5e3,5e3,6e3])
+                                            times=np.array([0,1e-3,6e-3,7e-3]),amplitudes=np.array([4e3,5e3,5e3,6e3]))
         g2 = make_scaled_extended_trapezoid(channel='x',system=Opts(), scale=sc,
-                                            times=[0,1e-3,6e-3,7e-3],amplitudes=[4e3,5e3,5e3,6e3])
+                                            times=np.array([0,1e-3,6e-3,7e-3]),amplitudes=np.array([4e3,5e3,5e3,6e3]))
         g3 = make_scaled_extended_trapezoid(channel='x',system=Opts(), scale=0,
-                                            times=[0,1e-3,6e-3,7e-3],amplitudes=[4e3,5e3,5e3,6e3])
+                                            times=np.array([0,1e-3,6e-3,7e-3]),amplitudes=np.array([4e3,5e3,5e3,6e3]))
 
         np.testing.assert_equal(g0.channel,g1.channel)
         np.testing.assert_array_equal(g0.waveform,g1.waveform)
@@ -196,6 +191,12 @@ class TestHelpers(unittest.TestCase):
         np.testing.assert_equal(ug_pe, [0,0,1])
         np.testing.assert_equal(ug_ss, [1,0,0])
 
+        ug_ro, ug_pe, ug_ss = parse_enc([[0.3,0,0], [0,0.4,0], [0,0,0.5]])
+        np.testing.assert_equal(ug_ro,[1,0,0])
+        np.testing.assert_equal(ug_pe,[0,1,0])
+        np.testing.assert_equal(ug_ss,[0,0,1])
+
+
     def test_make_oblique_gradients(self):
         g = make_trapezoid(channel='x',amplitude=5000,duration=1e-3,rise_time=1e-4)
         theta = np.random.rand()*np.pi
@@ -207,9 +208,9 @@ class TestHelpers(unittest.TestCase):
         np.testing.assert_equal(gy.channel,'y')
         np.testing.assert_equal(gz.channel,'z')
         # Check amplitude
-        np.testing.assert_equal(gx.amplitude,5000*ug[0])
-        np.testing.assert_equal(gy.amplitude,5000*ug[1])
-        np.testing.assert_equal(gz.amplitude,5000*ug[2])
+        np.testing.assert_almost_equal(gx.amplitude,5000*ug[0])
+        np.testing.assert_almost_equal(gy.amplitude,5000*ug[1])
+        np.testing.assert_almost_equal(gz.amplitude,5000*ug[2])
 
     def test_modify_gradient(self):
         g1 = make_trapezoid(channel='x',amplitude=5000,duration=1e-3,rise_time=1e-4)
@@ -245,7 +246,6 @@ class TestHelpers(unittest.TestCase):
 
     def test_get_radk_params_2D(self):
         Ns = get_radk_params_2D(N=256)
-
         np.testing.assert_equal(Ns, 804)
 
         self.assertRaises(TypeError, get_radk_params_2D, "")

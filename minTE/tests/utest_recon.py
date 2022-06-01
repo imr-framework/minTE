@@ -6,7 +6,6 @@ from scipy.io import loadmat, savemat
 from pynufft import NUFFT
 from minTE.sequences.sequence_helpers import get_radk_params_2D, get_radk_params_3D
 import skimage
-import matplotlib.pyplot as plt
 
 from pathlib import Path
 ROOT_PATH = Path(__file__).parent

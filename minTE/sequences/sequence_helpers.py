@@ -287,9 +287,9 @@ def parse_enc(enc):
         ug_pe = ug_pe / np.linalg.norm(ug_pe)
         ug_ss = ug_ss / np.linalg.norm(ug_ss)
 
-    print('ug_ro: ', ug_ro)
-    print('ug_pe: ', ug_pe)
-    print('ug_ss: ', ug_ss)
+    #print('ug_ro: ', ug_ro)
+    #print('ug_pe: ', ug_pe)
+    #print('ug_ss: ', ug_ss)
 
     return ug_ro, ug_pe, ug_ss
 
@@ -436,3 +436,4 @@ def get_radk_params_3D(dr, fov):
     Nphi = int(Nphi)
 
     return Ns, Ntheta, Nphi
+

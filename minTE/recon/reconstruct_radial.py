@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat, savemat
 import math
-import mat73
 # #
 
 def reconstruct_2d(kspace, ktraj, N=256, maxiter=50, half_pulse=True):

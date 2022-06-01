@@ -157,8 +157,8 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     # Display sequence plot
     #seq.plot(time_range=[-TR/2,1.5*TR])
     # Test sequence validity
-    out_text = seq.test_report()
-    print(out_text)
+    #out_text = seq.test_report()
+    #print(out_text)
     # Save sequence
     if save_seq:
         seq.write(f'seqs/code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}_delay{extra_delay_time*1e3}ms.seq')
