@@ -19,11 +19,10 @@ MANIFEST
 __pycache__/
 
 # Local files
-seqs/
-figures/
-data/
-pypulseq_demos/
-*.seq
+minTE/seqs/
+minTE/figures/
+minTE/data/
+minTE/pypulseq_demos/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
