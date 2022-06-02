@@ -18,7 +18,7 @@ authors:
     affiliation: 2
   - name: Sairam Geethanath
     orcid: 0000-0002-3776-4114
-    affiliation: 3
+    affiliation: 2,3
 
 affiliations:
  - name: Department of Biomedical Engineering, Columbia University in the City of New York
