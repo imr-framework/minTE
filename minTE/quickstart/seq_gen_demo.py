@@ -22,14 +22,21 @@ def export_waveforms(seq, time_range=(0, np.inf)):
     all_waveforms: dict
         Dictionary containing all sequence waveforms and time array(s)
         The keys are listed here:
-        't_adc' - ADC timing array [seconds]
-        't_rf' - RF timing array [seconds]
-        ''
+        't_adc' - ADC timing array
+        't_rf' - RF timing array
+        't_rf_centers' - Timing for centers of Rf pulses
+        't_gx' - Gx timing array
+        't_gy' - Gy timing array
+        't_gz' - Gz timing array
         'adc' - ADC complex signal (amplitude=1, phase=adc phase)
         'rf' - RF complex signal
+        'rf_centers' - RF complex signals only at centers of pulses
         'gx' - x gradient
         'gy' - y gradient
         'gz' - z gradient
+        'grad_unit' - unit of gradients
+        'rf_unit' - unit of RF pulses
+        'time_unit' - unit of timings
     """
     # Check time range validity
     if not all([isinstance(x, (int, float)) for x in time_range]) or len(time_range) != 2:
@@ -71,14 +78,6 @@ def export_waveforms(seq, time_range=(0, np.inf)):
                 tc, ic = calc_rf_center(rf)
                 t = rf.t + rf.delay
                 tc = tc + rf.delay
-                #
-                # sp12.plot(t_factor * (t0 + t), np.abs(rf.signal))
-                # sp13.plot(t_factor * (t0 + t), np.angle(rf.signal * np.exp(1j * rf.phase_offset)
-                #                                         * np.exp(1j * 2 * math.pi * rf.t * rf.freq_offset)),
-                #           t_factor * (t0 + tc), np.angle(rf.signal[ic] * np.exp(1j * rf.phase_offset)
-                #                                          * np.exp(1j * 2 * math.pi * rf.t[ic] * rf.freq_offset)),
-                #           'xb')
-
                 rf_t = t0 + t
                 rf = rf.signal * np.exp(1j * rf.phase_offset) \
                                                         * np.exp(1j * 2 * math.pi * rf.t * rf.freq_offset)
@@ -153,6 +152,8 @@ def display_seq_interactive(all_waveforms,time_range=(0,np.inf)):
   fig.update_yaxes(title_text='[rads]',row=2,col=1)
   fig.update_yaxes(title_text='[rads]',row=3,col=1)
 
+  for r in range(3):
+      fig.update_yaxes(title_text=all_waveforms['grad_unit'], row=r + 1, col=2)
 
   fig.show()
 
@@ -234,7 +235,7 @@ def demo_CODE():
                       os_factor=1, rf_type='gauss',save_seq=False)
     return seq, ktraj
 
-def display_seq(seq,dim):
+def display_seq(seq,ktraj,dim):
     """Helper function; exports and displays a demo sequence
     """
     all_waveforms = export_waveforms(seq, time_range=(0, 32e-3))
@@ -282,7 +283,7 @@ if __name__ == "__main__":
     print("Generating test report...")
     print(seq.test_report())
     print("Displaying sequence...")
-    display_seq(seq,dim)
+    display_seq(seq,ktraj,dim)
 
     # Ask if user wants to save files
     save_bool = True

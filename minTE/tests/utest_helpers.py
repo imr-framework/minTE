@@ -104,8 +104,6 @@ class TestHelpers(unittest.TestCase):
         self.assertIsInstance(ktraj, np.ndarray)
         np.testing.assert_equal(ktraj.shape,[n,3])
 
-        self.assertEqual(1,0)
-
         # Check: values
         kx = np.sin(theta) * np.cos(phi) * np.arange(0, n * dk, dk) + 0.5 * gx.rise_time * gx.amplitude + gx_rew.area
         ky = np.sin(theta) * np.sin(phi) * np.arange(0, n * dk, dk) + 0.5 * gy.rise_time * gy.amplitude + gy_rew.area

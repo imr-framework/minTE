@@ -17,6 +17,14 @@ def simulate_ute_pulses(use_half_pulse=False, rf_index=1):
     rf_index : int
         Which RF pulse to use. rf_index = 2 means the second RF pulse of the seq is simulated.
 
+    Returns
+    -------
+    signals : np.ndarray
+        Simulated signals (complex Mxy)
+    bwsim : float
+        Bandwidth of simulation in Hz
+    rf : types.SimpleNamespace
+        PyPulseq RF pulse simulated
     """
     # Make a UTE sequence and extract the first RF pulse
     thk = 5e-3
