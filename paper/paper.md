@@ -51,6 +51,7 @@ can be rewound to any point between $k = -k_{max}$ and $k = 0$. Rewinding preser
 
 ![CODE images of the ACR phantom.\label{fig:code}](code.png)
 
+Both 2D and 3D images of an ex vivo porcine muscle/bone sample can be found in the previous publication [@minTEismrm2022]. 
 
 ## Half-pulse method and simulation  
 A conceptual diagram of the half-pulse excitation mode is shown in \autoref{fig:halfpulse}. The excitation k-space concept can be used to explain why the sum of the two half-pulse acquisitions is equivalent to the full pulse acquisition [@smalltip; @halfpulseMRA]. At small flip angles, the final $M_{xy}$ can be expressed as an integral across $B_1(t)$  multiplied by a complex exponential phase term: 
