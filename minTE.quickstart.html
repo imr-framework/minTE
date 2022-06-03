@@ -117,7 +117,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="minTE.quickstart.seq_gen_demo.display_seq">
-<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">display_seq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.display_seq" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">minTE.quickstart.seq_gen_demo.</span></span><span class="sig-name descname"><span class="pre">display_seq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ktraj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#minTE.quickstart.seq_gen_demo.display_seq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Helper function; exports and displays a demo sequence</p>
 </dd></dl>
 
@@ -146,14 +146,21 @@
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>all_waveforms</strong> – Dictionary containing all sequence waveforms and time array(s)
 The keys are listed here:
-‘t_adc’ - ADC timing array [seconds]
-‘t_rf’ - RF timing array [seconds]
-‘’
+‘t_adc’ - ADC timing array
+‘t_rf’ - RF timing array
+‘t_rf_centers’ - Timing for centers of Rf pulses
+‘t_gx’ - Gx timing array
+‘t_gy’ - Gy timing array
+‘t_gz’ - Gz timing array
 ‘adc’ - ADC complex signal (amplitude=1, phase=adc phase)
 ‘rf’ - RF complex signal
+‘rf_centers’ - RF complex signals only at centers of pulses
 ‘gx’ - x gradient
 ‘gy’ - y gradient
-‘gz’ - z gradient</p>
+‘gz’ - z gradient
+‘grad_unit’ - unit of gradients
+‘rf_unit’ - unit of RF pulses
+‘time_unit’ - unit of timings</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>dict</p>

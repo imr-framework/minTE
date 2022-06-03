@@ -11,6 +11,7 @@ Subpackages
    minTE.recon
    minTE.sequences
    minTE.sim
+   minTE.tests
 
 Module contents
 ---------------
