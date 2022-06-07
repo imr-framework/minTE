@@ -12,13 +12,13 @@ tags:
 authors:
   - name: Gehua Tong
     orcid: 0000-0001-6263-762X
-    affiliation: 1,2
+    affiliation: "1, 2"
   - name: John Thomas Vaughan Jr.
     orcid: 0000-0002-6933-3757
     affiliation: 2
   - name: Sairam Geethanath
     orcid: 0000-0002-3776-4114
-    affiliation: 2,3
+    affiliation: "2, 3"
 
 affiliations:
  - name: Department of Biomedical Engineering, Columbia University in the City of New York
