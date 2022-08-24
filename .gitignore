@@ -19,7 +19,6 @@ MANIFEST
 __pycache__/
 
 # Local files
-minTE/seqs/
 minTE/figures/
 minTE/data/
 minTE/pypulseq_demos/
