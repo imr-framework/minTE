@@ -6,18 +6,15 @@ from pypulseq.calc_duration import calc_duration
 from pypulseq.make_adc import make_adc
 from pypulseq.make_delay import make_delay
 from pypulseq.make_sinc_pulse import make_sinc_pulse
-from pypulseq.make_trap_pulse import make_trapezoid
 from pypulseq.opts import Opts
-from minTE.sequences.write_UTE_3D import get_radk_params_3D
 from minTE.sequences.sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
-from scipy.io import savemat, loadmat
+from scipy.io import savemat
 
 def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
                        rf_type='gauss', os_factor=1, save_seq=True):
     """
     3D or 2D (projection) CODE sequence
-    (cite! )
 
     Parameters
     ----------
@@ -92,12 +89,6 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     # Round off timing to system requirements
     rf.delay = system.grad_raster_time * round(rf.delay / system.grad_raster_time)
     g_pre.delay = system.grad_raster_time * round (g_pre.delay / system.grad_raster_time)
-
-
-    # Readout gradient (5 ms readout time)
-    #ro_time = 5e-3
-    #ro_rise_time = 20e-6
-
     dr = FOV/N
     kmax = (1/dr)/2
     Nro = np.round(os_factor * N)
@@ -108,22 +99,13 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     ro_duration = 2.5e-3
     dkp = (1/FOV) / (1+s)
     ro_area = N * dkp
-    g_ro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
+    g_ro = make_trapezoid(channel='x', rise_time=40e-6, flat_area=ro_area, flat_time=ro_duration, system=system)
     adc = make_adc(num_samples=Nro, duration=g_ro.flat_time, delay=g_ro.rise_time, system=system)
-
-    # Readout gradient & ADC
-    #adc_dwell = 10e-6 # 10 us sampling interval (100 KHz readout bandwidth)
-    #g_ro = make_trapezoid(channel='x', system=system, amplitude=dk/adc_dwell, flat_time=adc_dwell*int(N/2), rise_time=ro_rise_time)
-    #flat_delay = (0.5*g_pre.area - 0.5*ro_rise_time*g_ro.amplitude) / g_ro.amplitude
-    #flat_delay = system.grad_raster_time * round(flat_delay / system.grad_raster_time)
-    # Make sure the first ADC is at center of k-space.
-    #adc = make_adc(system=system, num_samples=Nro, dwell = adc_dwell, delay = g_ro.rise_time+flat_delay)
 
     # Delay
     TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro)
     delayTR = make_delay(TRfill)
 
-    #TE = 0.5 * calc_duration(g_pre) + adc.delay
     TE = 0.5 * calc_duration(g_pre) + g_ro.rise_time + adc.dwell * Nro / 2 * (1 - s)
     print(f'TE obtained: {TE*1e3} ms')
 
@@ -132,7 +114,6 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
 
     extra_delay_time = 0
 
-    # Construct sequence
     # Initiate sequence
     seq = Sequence(system)
     u = 0
@@ -153,15 +134,9 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
             gpxh, gpyh, gpzh = make_oblique_gradients(gradient=g_pre,unit_grad=-0.5*ug)
             ktraj[u, :, :] = get_ktraj_3d_rew_delay(g_ro_x, gpxh, g_ro_y, gpyh, g_ro_z, gpzh, adc)
             u += 1
-
-    # Display sequence plot
-    #seq.plot(time_range=[-TR/2,1.5*TR])
-    # Test sequence validity
-    #out_text = seq.test_report()
-    #print(out_text)
     # Save sequence
     if save_seq:
-        seq.write(f'seqs/code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}_delay{extra_delay_time*1e3}ms.seq')
+        seq.write(f'seqs/newcode{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}_delay{extra_delay_time*1e3}ms.seq')
         savemat(f'seqs/ktraj_code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}.mat',{'ktraj': ktraj})
 
     return seq, TE, ktraj
@@ -170,9 +145,7 @@ if __name__ == '__main__':
     # 083021
     seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
                              os_factor=1, save_seq=False, rf_type='gauss')
+    #print(seq.test_report())
+    seq.write('CODE_64_TR15_FLIP10_FOV253_091422.seq')
+    savemat('CODE_64_info_091422.mat',{'TE':TE,'ktraj':ktraj})
     print(f'TE is {TE*1e3} ms')
-    #seq.write('code3d_fov253_64_TR100_FA10_102021.seq')
-    #savemat('code3d_fov253_64_TR100_FA10_102021.mat',{'ktraj':ktraj,'TE':TE})
-    #seq.plot(time_range=[0,2e-3])
-
-

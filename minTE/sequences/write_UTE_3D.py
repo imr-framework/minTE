@@ -67,6 +67,9 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
 
 
     ro_duration = 2.5e-3
+
+
+
     ro_os = os_factor  # Oversampling factor
     rf_spoiling_inc = 117  # RF spoiling increment value.
 
@@ -95,9 +98,23 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
     s = np.round(ro_asymmetry * Nro / 2) / (Nro / 2)
     dk = (1 / FOV) / (1 + s)
     ro_area = N * dk
-    gro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
+
+    gro = make_trapezoid(channel='x', rise_time=40e-6, flat_area=ro_area, flat_time=ro_duration, system=system)
     adc = make_adc(num_samples=Nro, duration=gro.flat_time, delay=gro.rise_time, system=system)
-    gro_pre = make_trapezoid(channel='x', area=- (gro.area - ro_area) / 2 - (ro_area / 2) * (1 - s), system=system)
+
+    # TODO check it's good - Make sure the max amplitude at the rewinder complies with slew rate limits - 091922
+    rewinder_area = - (gro.area - ro_area) / 2 - (ro_area / 2) * (1 - s)
+    if use_half_pulse:
+        extra_area = np.absolute(gz_ramp_reph.area)
+    else:
+        extra_area = np.absolute(gz_reph.area)
+    max_rewinder_area = np.absolute(rewinder_area) + extra_area
+
+    gro_pre = make_trapezoid(channel='x', area=max_rewinder_area, system=system)
+    print(f'gro_pre area initialized: {gro_pre.area}')
+    rewinder_ratio = rewinder_area / max_rewinder_area
+    modify_gradient(gro_pre, scale=rewinder_ratio)
+    print(f'gro_pre area before use: {gro_pre.area}')
 
     # Spoilers
     gro_spoil = make_trapezoid(channel='x', area=0.2 * N * dk, system=system)
@@ -156,6 +173,9 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
                         modify_gradient(gz_ramp_reph, scale=-1)
                         gpz_reph = copy.deepcopy(gpz)
                         modify_gradient(gpz_reph, scale=(gpz.area + gz_ramp_reph.area)/gpz.area)
+
+
+
                     else:
                         gpz_reph = copy.deepcopy(gpz)
                         modify_gradient(gpz_reph, scale=(gpz.area + gz_reph.area) / gpz.area)
@@ -174,8 +194,6 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
             ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
             u += 1
 
-
-
     ok, error_report = seq.check_timing()  # Check whether the timing of the sequence is correct
     if ok:
         print('Timing check passed successfully')
@@ -191,13 +209,18 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
 
     return seq, TE, ktraj
 
-
-
 if __name__ == '__main__':
-    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=253e-3, FA=10, TR=15e-3, ro_asymmetry=0.97,
-                            os_factor=1, rf_type='sinc', rf_dur=0.05e-3, use_half_pulse=True, save_seq=False)
-    print(f'TE is {TE*1e3} ms.')
-    print(seq.test_report())
-    seq.write('ute3d_fov253_64_s097_rfdur50us_halfpulse_TR15_FA10_032422.seq')
-    savemat('ute3d_fov253_64_s097_rfdur50us_halfpulse_TR15_FA10_032422.mat', {'TE':TE, 'ktraj':ktraj})
+    # seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64, FOV=253e-3, slab_thk=253e-3, FA=10, TR=15e-3, ro_asymmetry=0.97,
+    #                         os_factor=1, rf_type='sinc', rf_dur=0.05e-3, use_half_pulse=False, save_seq=False)
+    # print(f'TE is {TE*1e3} ms.')
+    # #print(seq.test_report())
+    # seq.write('ute3d_fov253_64_s097_ramp40us_fullpulse_TR15_FA10_091422.seq')
+    # savemat('ute3d_fov253_64_s097_ramp40us_fullpulse_TR15_FA10_091422.mat', {'TE':TE, 'ktraj':ktraj})
+    #
 
+    # debug
+    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64,FOV=253e-3,slab_thk=253e-3,FA=10,ro_asymmetry=0.97,
+                                             os_factor=1, rf_type="sinc",rf_dur=0.05e-3, use_half_pulse=False,
+                                             save_seq=False)
+    seq.write('ute_3d_fixed_FOV253_fp_091922.seq')
+    #print(seq.test_report())
