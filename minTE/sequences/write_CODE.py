@@ -99,7 +99,9 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     ro_duration = 2.5e-3
     dkp = (1/FOV) / (1+s)
     ro_area = N * dkp
-    g_ro = make_trapezoid(channel='x', rise_time=40e-6, flat_area=ro_area, flat_time=ro_duration, system=system)
+    g_ro = make_trapezoid(channel='x', rise_time=20e-6, flat_area=ro_area, flat_time=ro_duration, system=system)
+    #g_ro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
+
     adc = make_adc(num_samples=Nro, duration=g_ro.flat_time, delay=g_ro.rise_time, system=system)
 
     # Delay
@@ -131,7 +133,11 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
             seq.add_block(delayTR)
 
             # Store trajectory
-            gpxh, gpyh, gpzh = make_oblique_gradients(gradient=g_pre,unit_grad=-0.5*ug)
+            gpxh, gpyh, gpzh = make_oblique_gradients(gradient=g_pre,unit_grad=-ug)
+            modify_gradient(gpxh,0.5)
+            modify_gradient(gpyh,0.5)
+            modify_gradient(gpzh,0.5)
+
             ktraj[u, :, :] = get_ktraj_3d_rew_delay(g_ro_x, gpxh, g_ro_y, gpyh, g_ro_z, gpzh, adc)
             u += 1
     # Save sequence
@@ -139,13 +145,14 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
         seq.write(f'seqs/newcode{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}_delay{extra_delay_time*1e3}ms.seq')
         savemat(f'seqs/ktraj_code{enc_type}_{rf_type}_TR{TR*1e3:.0f}_TE{TE*1e3:.2f}_FA{flip}_N{N}.mat',{'ktraj': ktraj})
 
+
     return seq, TE, ktraj
 
 if __name__ == '__main__':
     # 083021
     seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
                              os_factor=1, save_seq=False, rf_type='gauss')
-    #print(seq.test_report())
-    seq.write('CODE_64_TR15_FLIP10_FOV253_091422.seq')
-    savemat('CODE_64_info_091422.mat',{'TE':TE,'ktraj':ktraj})
-    print(f'TE is {TE*1e3} ms')
+    print(seq.test_report())
+    seq.write('CODE_64_TR15_FLIP10_FOV253_rise20_092222.seq')
+    savemat('CODE_64_info_rise20_092222.mat',{'TE':TE,'ktraj':ktraj})
+    #print(f'TE is {TE*1e3} ms')
