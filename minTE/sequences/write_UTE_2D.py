@@ -11,7 +11,7 @@ from pypulseq.calc_rf_center import calc_rf_center
 from scipy.io import savemat
 
 def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0], FA=10, TR=10e-3, ro_asymmetry=0.97,
-                            use_half_pulse=True, rf_dur=1e-3, TE_use=None, save_seq=True):
+                            use_half_pulse=True, rf_dur=1e-3, enc='xyz',TE_use=None, save_seq=True):
     """
     Single-slice 2D partially rewound UTE with RF spoiling
     (cirte)
@@ -39,6 +39,9 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
         This doubles both the number of excitations and acquisition time
     rf_dur : float, default=0.001
         RF pulse duration in [seconds]
+    enc : str
+        Orthogonal encoding string. 'xyz' means readout in x, phase enc. in y, and slice in z.
+        Allowed: 'xyz', 'xzy', 'yzx', 'yxz', 'zxy', 'zyx'
     TE_use : float, default=None
         Desired echo time in [seconds]. If shorter than feasible, minimum TE is used.
     save_seq : bool, default=True
@@ -67,17 +70,23 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
 
     rf_spoiling_inc = 117 # RF spoiling increment value.
 
+    # Encoding
+    ch_ro1 = enc[0]
+    ch_ro2 = enc[1]
+    ch_ss = enc[2]
+
     # Sequence components
     if use_half_pulse:
         cp = 1
     else:
         cp = 0.5
 
-
     # RF pulse, slice selecting gradient, and gradient to rephase down-ramp (half pulse only)
     rf, gz, gz_reph = make_sinc_pulse(flip_angle=FA*np.pi/180, duration=rf_dur, slice_thickness=thk, apodization=0.5,
                                       time_bw_product=4, center_pos=cp, system=system, return_gz=True)
-    gz_ramp_reph = make_trapezoid(channel='z',area=-gz.fall_time*gz.amplitude/2,system=system)
+    modify_gradient(gz,scale=1,channel=ch_ss)
+    modify_gradient(gz_reph,scale=1,channel=ch_ss)
+    gz_ramp_reph = make_trapezoid(channel=ch_ss,area=-gz.fall_time*gz.amplitude/2,system=system)
 
     # Asymmetry! (0 - fully rewound; 1 - hall-echo)
     Nro = np.round(ro_os*N) # Number of readout points
@@ -97,14 +106,12 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
         TE = gz.fall_time + calc_duration(gro_pre, gz_ramp_reph) + gro.rise_time + adc.dwell * Nro / 2 * (1-s)
         if calc_duration(gz_ramp_reph) > calc_duration(gro_pre):
             gro_pre.delay = calc_duration(gz_ramp_reph) - calc_duration(gro_pre)
-        #delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_ramp_reph) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
         time_per_slice = calc_duration(gz) + calc_duration(gro_pre,gz_ramp_reph) + calc_duration(gro)
         delay_TR_per_slice = (TR - len(slice_locs)*time_per_slice)/len(slice_locs)
     else:
         TE = gz.fall_time + calc_duration(gro_pre, gz_reph) + gro.rise_time + adc.dwell * Nro / 2 * (1 - s)
         if calc_duration(gz_reph) > calc_duration(gro_pre):
             gro_pre.delay = calc_duration(gz_reph) - calc_duration(gro_pre)
-        ##delay_TR = np.ceil((TR - calc_duration(gro_pre, gz_reph) - calc_duration(gz) - calc_duration(gro)) / seq.grad_raster_time) * seq.grad_raster_time
         time_per_slice = calc_duration(gz) + calc_duration(gro_pre, gz_reph) + calc_duration(gro)
         delay_TR_per_slice = (TR - len(slice_locs)*time_per_slice)/len(slice_locs)
 
@@ -113,8 +120,8 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
 
     delay_TR_per_slice = np.ceil(delay_TR_per_slice/seq.grad_raster_time)*seq.grad_raster_time
 
-    assert np.all(delay_TR_per_slice >= calc_duration(gro_spoil)) # The TR delay starts at the same time as the spoilers!
-
+    # The TR delay starts at the same time as the spoilers!
+    assert np.all(delay_TR_per_slice >= calc_duration(gro_spoil))
     # TE delay (if longer than minimal TE is desired)
     TE_delay = 0
     if TE_use is None:
@@ -139,13 +146,33 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
     # Half pulse: C = 2
     C = int(use_half_pulse) + 1
 
+    ind_ro1 = 'xyz'.find(ch_ro1)
+    ind_ro2 = 'xyz'.find(ch_ro2)
+
 
     for spoke_ind in range(Nr): # for each spoke
         phi = dphi * spoke_ind
-        ug2d = [np.cos(phi), np.sin(phi), 0]
-        gpx, gpy, __ = make_oblique_gradients(gro_pre, ug2d)
-        grx, gry, __ = make_oblique_gradients(gro, ug2d)
-        gsx, gsy, __ = make_oblique_gradients(gro_spoil, ug2d)
+        #ug2d = [np.cos(phi), np.sin(phi), 0]
+
+        ug2d = [0,0,0]
+        ug2d[ind_ro1] = np.cos(phi)
+        ug2d[ind_ro2] = np.sin(phi)
+        gpx, gpy, gpz = make_oblique_gradients(gro_pre, ug2d)
+        grx, gry, grz = make_oblique_gradients(gro, ug2d)
+        gsx, gsy, gsz = make_oblique_gradients(gro_spoil, ug2d)
+        gp = [gpx,gpy,gpz]
+        gr = [grx,gry,grz]
+        gs = [gsx,gsy,gsz]
+        # Extract correct gradients
+        gpr1 = gp[ind_ro1]
+        gpr2 = gp[ind_ro2]
+        grr1 = gr[ind_ro1]
+        grr2 = gr[ind_ro2]
+        gsr1 = gr[ind_ro1]
+        gsr2 = gr[ind_ro2]
+
+
+
         for c in range(C): # half pulse option; C = 2 if using half pulse
             for s in range(len(slice_locs)): # interleaved slices
                 # RF spoiling phase calculations
@@ -171,16 +198,14 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
                     seq.add_block(make_delay(TE_delay))
 
                 if use_half_pulse:
-                    seq.add_block(gpx, gpy, gz_ramp_reph)
+                    seq.add_block(gpr1, gpr2, gz_ramp_reph)
                 else:
-                    seq.add_block(gpx, gpy, gz_reph)
+                    seq.add_block(gpr1, gpr2, gz_reph)
 
-                seq.add_block(grx, gry, adc)
-                seq.add_block(gsx, gsy, make_delay(delay_TR_per_slice))
+                seq.add_block(grr1, grr2, adc)
+                seq.add_block(gsr1, gsr2, make_delay(delay_TR_per_slice))
 
-                #ktraj[u, :, :] = get_ktraj_3d(grx, gry, grz, adc, [gpx], [gpy], [gpz])
-        #print(f'spoke {spoke_ind+1}/{Nr} added')
-        ktraj[u, :] = get_ktraj_with_rew(grx, gpx, gry, gpy, adc, display=False)
+        ktraj[u, :] = get_ktraj_with_rew(grr1, gpr1, grr2, gpr2, adc, display=False)
 
         u += 1
 
@@ -202,19 +227,28 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
 
 if __name__ == '__main__':
     # Try it!
-    FOV = 253e-3
-    N = 256
-    Nr = 804
-    thk = 5e-3
-    FA = 10
+    # FOV = 253e-3
+    # N = 256
+    # Nr = 804
+    # thk = 5e-3
+    # FA = 10
+    #
+    # seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=N, Nr=Nr, FOV=FOV, thk=thk, slice_locs=[0],
+    #                                       FA=10, TR=15e-3, ro_asymmetry=0.97, use_half_pulse=True, rf_dur=0.6e-3,
+    #                                       TE_use=None)
+    # seq.plot(time_range=[0,30e-3])
+    # print(f'TE is {TE*1e3} ms!')
 
-    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=N, Nr=Nr, FOV=FOV, thk=thk, slice_locs=[0],
-                                          FA=10, TR=15e-3, ro_asymmetry=0.97, use_half_pulse=True, rf_dur=0.6e-3,
-                                          TE_use=None)
-    print(f'TE is {TE*1e3} ms!')
+    #seq.write('ute2d.seq')
+    #savemat('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.mat',{'ktraj':ktraj,'TE':TE})
+
+    enc = 'zyx'
+
+    # Debug
+    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=253e-3,
+                                             thk=5e-3, slice_locs=[0], FA=10, TR=15e-3,
+                                             ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3,
+                                             enc=enc, TE_use = None)
+    seq.write(f'ute2D_{enc}.seq')
     #print(seq.test_report())
-
-    seq.write('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.seq')
-    savemat('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.mat',{'ktraj':ktraj,'TE':TE})
-
-    #seq.plot(time_range=[0,30e-3])
+    seq.plot(time_range=[0,100e-3])
