@@ -12,7 +12,7 @@ from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat
 
 def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
-                       rf_type='gauss', os_factor=1, save_seq=True):
+                       rf_type='gauss', os_factor=1, spoil=False, save_seq=True):
     """
     3D or 2D (projection) CODE sequence
 
@@ -34,6 +34,8 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     os_factor : float, default=1
         Oversampling factor in readout
         The number of readout samples is the nearest integer from os_factor*N
+    spoil : bool
+        Whether to add a spoiler gradient.
     save_seq : bool, default=True
         Whether to save this sequence as a .seq file
 
@@ -101,11 +103,16 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
     ro_area = N * dkp
     g_ro = make_trapezoid(channel='x', rise_time=20e-6, flat_area=ro_area, flat_time=ro_duration, system=system)
     #g_ro = make_trapezoid(channel='x', flat_area=ro_area, flat_time=ro_duration, system=system)
-
     adc = make_adc(num_samples=Nro, duration=g_ro.flat_time, delay=g_ro.rise_time, system=system)
 
-    # Delay
-    TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro)
+    if spoil:
+        gro_spoil = make_trapezoid(channel='x', area=0.2 * N / FOV, system=system)
+        # Delay
+        TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro) - calc_duration(gro_spoil)
+    else:
+        # Delay
+        TRfill = TR - calc_duration(g_pre) - calc_duration(g_ro)
+
     delayTR = make_delay(TRfill)
 
     TE = 0.5 * calc_duration(g_pre) + g_ro.rise_time + adc.dwell * Nro / 2 * (1 - s)
@@ -130,6 +137,9 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
             seq.add_block(rf, g_pre_x, g_pre_y, g_pre_z)
             seq.add_block(make_delay(extra_delay_time))
             seq.add_block(g_ro_x, g_ro_y, g_ro_z, adc)
+            if spoil:
+                gs_x, gs_y, gs_z = make_oblique_gradients(gradient=gro_spoil,unit_grad=ug)
+                seq.add_block(gs_x,gs_y,gs_z)
             seq.add_block(delayTR)
 
             # Store trajectory
@@ -150,9 +160,16 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
 
 if __name__ == '__main__':
     # 083021
-    seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
-                             os_factor=1, save_seq=False, rf_type='gauss')
-    print(seq.test_report())
-    seq.write('CODE_64_TR15_FLIP10_FOV253_rise20_092222.seq')
-    savemat('CODE_64_info_rise20_092222.mat',{'TE':TE,'ktraj':ktraj})
+    # seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
+    #                          os_factor=1, save_seq=False, rf_type='gauss')
+    # seq.write('CODE_64_TR15_FLIP10_FOV253_rise20_092222.seq')
+    # savemat('CODE_64_info_rise20_092222.mat',{'TE':TE,'ktraj':ktraj})
     #print(f'TE is {TE*1e3} ms')
+
+    #  With spoiler!
+    seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
+                                         os_factor=1, save_seq=False, spoil=True, rf_type='gauss')
+    print(seq.test_report())
+    seq.plot(time_range=[0,45e-3])
+    seq.write('CODE_64_TR15_FLIP10_FOV254_SPOILED_100622.seq')
+    savemat('CODE_64_info_100622.mat',{'TE':TE,'ktraj':ktraj})
