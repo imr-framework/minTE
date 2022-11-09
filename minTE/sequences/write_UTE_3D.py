@@ -9,7 +9,7 @@ from pypulseq.make_gauss_pulse import make_gauss_pulse
 from pypulseq.opts import Opts
 from scipy.io import savemat, loadmat
 from minTE.sequences.sequence_helpers import *
-
+SCANNER = 'Sola'
 def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, ro_asymmetry=0.97,
                             os_factor=1, rf_type='sinc', rf_dur=1e-3, use_half_pulse=True, save_seq=True):
     """
@@ -52,8 +52,19 @@ def write_UTE_3D_rf_spoiled(N=64, FOV=250e-3, slab_thk=250e-3, FA=10, TR=10e-3, 
     """
 
     # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
-    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
-                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+
+    if SCANNER == 'Prisma-Skyra':
+        # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
+        print('Making sequence for Prisma or Skyra')
+        system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    elif SCANNER == 'Sola':
+        print('Making sequence for Sola')
+        system = Opts(max_grad=20, grad_unit='mT/m', max_slew=180, slew_unit='T/m/s',
+                      rf_ringdown_time=20e-6, rf_dead_time=100e-6, adc_dead_time=10e-6)
+    elif SCANNER == 'Aera':
+        system = Opts(max_grad=28, grad_unit='mT/m', max_slew=125, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
     seq = Sequence(system=system)
 
     # Derived parameters
@@ -218,9 +229,11 @@ if __name__ == '__main__':
     # savemat('ute3d_fov253_64_s097_ramp40us_fullpulse_TR15_FA10_091422.mat', {'TE':TE, 'ktraj':ktraj})
     #
 
-    # debug
-    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64,FOV=253e-3,slab_thk=253e-3,FA=10,ro_asymmetry=0.97,
+    seq, TE, ktraj = write_UTE_3D_rf_spoiled(N=64,FOV=253e-3,slab_thk=253e-3,FA=10, TR=15e-3, ro_asymmetry=0.97,
                                              os_factor=1, rf_type="sinc",rf_dur=0.05e-3, use_half_pulse=False,
                                              save_seq=False)
-    seq.write('ute_3d_fixed_FOV253_fp_091922.seq')
     #print(seq.test_report())
+    seq.write('ute3D_full_Sola_1.4.0_new.seq')
+    # seq.write('ute_3d_fixed_FOV253_hp_091922.seq')
+    savemat('ute3D_info_for_Sola_full_new.mat', {'TE':TE, 'ktraj':ktraj})
+

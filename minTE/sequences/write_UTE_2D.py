@@ -9,6 +9,9 @@ from pypulseq.opts import Opts
 from minTE.sequences.sequence_helpers import *
 from pypulseq.calc_rf_center import calc_rf_center
 from scipy.io import savemat
+from pypulseq.make_trapezoid import make_trapezoid
+
+SCANNER = 'Prisma-Skyra'
 
 def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0], FA=10, TR=10e-3, ro_asymmetry=0.97,
                             use_half_pulse=True, rf_dur=1e-3, enc='xyz',TE_use=None, save_seq=True):
@@ -58,9 +61,20 @@ def write_UTE_2D_rf_spoiled(N=250, Nr=128, FOV=250e-3, thk=3e-3, slice_locs=[0],
         with size [spoke, readout sample]
     """
 
-    # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
-    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
-                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+
+    if SCANNER == 'Prisma-Skyra':
+        # Adapted from pypulseq demo write_ute.py (obtained mid-2021)
+        print('Making sequence for Prisma or Skyra')
+        system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    elif SCANNER == 'Sola':
+        print('Making sequence for Sola')
+        system = Opts(max_grad=20, grad_unit='mT/m', max_slew=180, slew_unit='T/m/s',
+                      rf_ringdown_time=20e-6, rf_dead_time=100e-6, adc_dead_time=10e-6)
+    elif SCANNER == 'Aera':
+        system = Opts(max_grad=28, grad_unit='mT/m', max_slew=125, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+
     seq = Sequence(system=system)
 
     # Derived parameters
@@ -242,13 +256,21 @@ if __name__ == '__main__':
     #seq.write('ute2d.seq')
     #savemat('ute2d_fov253_half_minRFdur_s097_TR15_FA10_032122.mat',{'ktraj':ktraj,'TE':TE})
 
-    enc = 'zyx'
+    enc = 'zxy' # coronal
+    #enc = 'xyz' # axial
+    sl = [-35e-3, -30e-3,-25e-3,-20e-3, -15e-3, -10e-3, -5e-3, 0,
+          5e-3, 10e-3, 15e-3, 20e-3, 25e-3,30e-3, 35e-3]
 
     # Debug
-    seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=253e-3,
-                                             thk=5e-3, slice_locs=[0], FA=10, TR=15e-3,
-                                             ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3,
-                                             enc=enc, TE_use = None)
-    seq.write(f'ute2D_{enc}.seq')
+    FOV0 = 253e-3 # For standard scans
+    FOV1 = 150e-3 # For gel setup (needs in-plane slice translation)
+    for u in range(len(sl)):
+        seq, TE, ktraj = write_UTE_2D_rf_spoiled(N=256, Nr=804, FOV=FOV0,
+                                                 thk=5e-3, slice_locs=[sl[u]], FA=10, TR=15e-3,
+                                                 ro_asymmetry=0.97, use_half_pulse=False, rf_dur=1e-3,
+                                                 enc=enc, TE_use = None)
+        seq.write(f'ute2D_coronal_full_at{sl[u]*1e3}mm_TE{TE*1e3}ms_1.4.0_{SCANNER}_new.seq')
+
     #print(seq.test_report())
-    seq.plot(time_range=[0,100e-3])
+    #seq.plot(time_range=[0,30e-3])
+    #savemat(f'ute2d_full_info_102722_TE{TE*1e3}_{SCANNER}_new.mat', {'ktraj':ktraj, 'TE':TE})

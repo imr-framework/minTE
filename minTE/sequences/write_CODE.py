@@ -11,6 +11,8 @@ from minTE.sequences.sequence_helpers import *
 from pypulseq.make_gauss_pulse import make_gauss_pulse
 from scipy.io import savemat
 
+SCANNER = 'Prisma-Skyra'
+
 def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
                        rf_type='gauss', os_factor=1, spoil=False, save_seq=True):
     """
@@ -52,8 +54,19 @@ def make_code_sequence(FOV=250e-3, N=64, TR=100e-3, flip=15, enc_type='3D',
 
     """
     # System options (copied from : amri-sos service form)
-    system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
-                  rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    if SCANNER == 'Prisma-Skyra':
+        print('Making sequence for Prisma or Skyra')
+        system = Opts(max_grad=32, grad_unit='mT/m', max_slew=130, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+    elif SCANNER == 'Sola':
+        print('Making sequence for Sola')
+        system = Opts(max_grad=20, grad_unit='mT/m', max_slew=180, slew_unit='T/m/s',
+                   rf_ringdown_time=20e-6, rf_dead_time=100e-6, adc_dead_time=10e-6)
+    elif SCANNER == 'Aera':
+        system = Opts(max_grad=28, grad_unit='mT/m', max_slew=125, slew_unit='T/m/s',
+                      rf_ringdown_time=30e-6, rf_dead_time=100e-6, adc_dead_time=20e-6)
+
+
     # Parameters
     # Radial sampling set-up
     dx = FOV / N
@@ -169,7 +182,9 @@ if __name__ == '__main__':
     #  With spoiler!
     seq, TE, ktraj = make_code_sequence(FOV=253e-3, N=64, TR=15e-3, flip=10, enc_type='3D',
                                          os_factor=1, save_seq=False, spoil=True, rf_type='gauss')
-    print(seq.test_report())
-    seq.plot(time_range=[0,45e-3])
-    seq.write('CODE_64_TR15_FLIP10_FOV254_SPOILED_100622.seq')
-    savemat('CODE_64_info_100622.mat',{'TE':TE,'ktraj':ktraj})
+    print(f'TE is {TE}')
+    #print(seq.test_report())
+    #seq.plot(time_range=[0,45e-3])
+    #seq.write('CODE_64_TR15_FLIP10_FOV254_SPOILED_101622.seq')
+    #seq.write('CODE64_for_Sola_1.4.0_new.seq')
+    #savemat('CODE_64_info_for_Sola_new.mat', {'TR':15e-3, 'TE':TE, 'FA':10, 'ktraj':ktraj})

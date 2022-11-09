@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pypulseq.make_extended_trapezoid import make_extended_trapezoid
-from pypulseq.make_trap_pulse import make_trapezoid
+from pypulseq.make_trapezoid import make_trapezoid
 import copy
 
 
